@@ -1,0 +1,127 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import { t, type Locale } from '../i18n/t';
+import { PAGE_ROUTES } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<BaseLayout
+  title={t(locale, 'pages.notfound_h1')}
+  description={t(locale, 'pages.notfound_body')}
+  pageId="notFound"
+>
+  <Header locale={locale} pageId="notFound" />
+  <main class="notfound-main">
+    <h1 class="type-display notfound-title">{t(locale, 'pages.notfound_h1')}</h1>
+    <p class="type-body notfound-body">{t(locale, 'pages.notfound_body')}</p>
+    <a class="notfound-cta type-body-bold" href={PAGE_ROUTES.home[locale]}>
+      {t(locale, 'pages.notfound_cta')}
+    </a>
+  </main>
+  <Footer locale={locale} />
+</BaseLayout>
+
+<style>
+  .notfound-main {
+
+    width: min(calc(100% - 48px), var(--page));
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--space-md);
+
+    min-height: calc(100svh - 74px);
+    padding: var(--space-lg);
+  }
+
+  @media (min-width: 860px) {
+    .notfound-main {
+      min-height: calc(100svh - 82px);
+    }
+  }
+
+  .notfound-title {
+    margin: 0;
+    color: var(--text);
+  }
+
+  .notfound-body {
+    margin: 0;
+    max-width: 52ch;
+    color: var(--muted);
+  }
+
+  .notfound-cta {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+    margin-top: var(--space-sm);
+    padding-inline: 26px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background-color: var(--btn-primary-bg);
+    background-image: var(--glass-gloss);
+    box-shadow: var(--glass-rim-hair), var(--glass-rim-top);
+    color: var(--btn-primary-text);
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      transform var(--motion-base) var(--ease-spring),
+      background-color var(--motion-fast) var(--ease-charge);
+  }
+
+  .notfound-cta::before,
+  .notfound-cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .notfound-cta::before {
+    z-index: -1;
+    background: var(--glass-gloss-inner);
+  }
+
+  .notfound-cta::after {
+    z-index: 2;
+    padding: 1px;
+    background: var(--glass-edge);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .notfound-cta:hover {
+      background-color: var(--btn-primary-bg-hover);
+    }
+  }
+
+  .notfound-cta:active {
+    transform: scale(var(--press-scale-strong));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+    background-color: var(--btn-primary-bg-active);
+  }
+</style>

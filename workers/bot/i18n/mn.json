@@ -1,0 +1,10 @@
+{
+  "reply.greeting": "Сайн байна уу! Та MELBET-ийн Монгол дахь түншийн хуудаснаас ирлээ.",
+  "reply.handoff": "Таны хүсэлтийг менежерт дамжууллаа — яг одоо түүн рүү шууд бичнэ үү.",
+  "reply.manager_button": "Менежерт бичих",
+  "reply.direction_line": "Чиглэл: {direction}",
+  "reply.repeat_note": "Та аль хэдийн бидэнтэй — менежер доор байна.",
+  "profile.short_description": "MELBET Монгол — түншийн хөтөлбөр. Менежерийн холбоо барих хаягийг шууд өгнө.",
+  "profile.description": "MELBET-ийн Монгол дахь түншийн хөтөлбөрийн албан ёсны бот. Affiliate, Bank Transfer, Team Cash — гурван чиглэл. START дарвал менежерийн холбоо барих хаяг тэр даруй ирнэ.",
+  "profile.command_start": "Эхлэх — менежерийн холбоо барих хаягийг авах"
+}

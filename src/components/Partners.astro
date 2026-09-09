@@ -1,0 +1,431 @@
+---
+import { Picture } from 'astro:assets';
+
+import type { ImageMetadata } from 'astro';
+
+import groupShot from '../assets/media/client-partners-group.webp';
+
+import bustLexor2k from '../assets/media/client-partner-lexor2k.webp';
+import bustNewsac from '../assets/media/client-partner-newsac.webp';
+import bustMaaraamn from '../assets/media/client-partner-maaraamn.webp';
+import bustZilkenberg from '../assets/media/client-partner-zilkenberg.webp';
+
+import { t } from '../i18n/t';
+import type { Locale } from '../i18n/routes';
+import { config } from '../config';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const people = config.partners.people;
+const unit = t(locale, 'partners.followers_unit');
+
+const byId = new Map(people.map((p) => [p.id, p]));
+const phoneRows = config.partners.phoneOrder.map((id) => {
+  const person = byId.get(id);
+  if (!person) {
+    throw new Error(
+      `config.partners.phoneOrder содержит «${id}», которого нет в config.partners.people. ` +
+        'Телефонный порядок обязан быть перестановкой того же состава.'
+    );
+  }
+  return person;
+});
+if (phoneRows.length !== people.length) {
+  throw new Error(
+    `В config.partners.phoneOrder ${phoneRows.length} человек, а в people ${people.length}. ` +
+      'Списки обязаны совпадать по составу: иначе ряд исчезнет с телефона молча.'
+  );
+}
+
+const busts: Record<string, ImageMetadata> = {
+  lexor2k: bustLexor2k,
+  newsac: bustNewsac,
+  maaraamn: bustMaaraamn,
+  zilkenberg: bustZilkenberg,
+};
+
+for (const person of people) {
+  if (!busts[person.id]) {
+    throw new Error(
+      `Нет бюста для «${person.id}». Собери его: ` +
+        `npm run prepare:media -- --only client-partner-${person.id} ` +
+        '(ветка CLIENT_BUSTS в scripts/prepare-media.ts).'
+    );
+  }
+}
+
+import SceneLayer from './SceneLayer.astro';
+import hillsLights from '../assets/media/scene-hills-lights.webp';
+const alt = `${people.map((p) => p.name).join(', ')}`;
+---
+
+<section class="partners" aria-labelledby="partners-title">
+
+  <SceneLayer
+    src={hillsLights}
+    modifier="scene-layer--hills"
+    sizes="100vw"
+    widths={[900, 1400, 1600]}
+    cover
+  />
+
+  <div class="container">
+    <h2 id="partners-title" class="type-h2 partners-title">{t(locale, 'partners.title')}</h2>
+  </div>
+
+  <ul class="partners-names">
+    {
+      phoneRows.map((person) => (
+        <li class:list={['partners-person', 'reveal-item', `partners-person--${person.id}`]}>
+
+          <div class="partners-bust">
+
+            <Picture
+              src={busts[person.id]!}
+              formats={['avif', 'webp']}
+              fallbackFormat="webp"
+              widths={[360, 480, 700]}
+              sizes="(min-width: 720px) 1px, 46vw"
+              quality={54}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+
+          <div class="partners-line">
+            <span class:list={['partners-name', `partners-name--${person.id}`]}>{person.name}</span>
+            <span class="partners-followers type-label">
+              {person.followersThousands} {unit}
+            </span>
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+
+  <div class="container partners-shot-wrap">
+    <div class="partners-shot">
+      <Picture
+        src={groupShot}
+        formats={['avif', 'webp']}
+        fallbackFormat="webp"
+        widths={[420, 640, 900, 1210, 1800]}
+        sizes="(max-width: 719px) 1px, (min-width: 1258px) 1210px, calc(100vw - 48px)"
+        quality={52}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </div>
+</section>
+
+<style>
+  .partners {
+
+    position: relative;
+
+    padding-block: var(--gap-section);
+
+  }
+
+  .partners > :global(.scene-layer--hills) {
+    --sl-top: -190px;
+    --sl-h: calc(100% + 190px + 286px);
+    --sl-w: 100%;
+    --sl-opacity: 0.9;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 340px,
+      #000 calc(100% - 10px),
+      rgba(0, 0, 0, 0.909) 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 340px,
+      #000 calc(100% - 10px),
+      rgba(0, 0, 0, 0.909) 100%
+    );
+  }
+
+  .partners > :global(.scene-layer--hills) {
+    --sl-first: calc(100% + 100px);
+  }
+
+  @media (min-width: 860px) {
+    .partners > :global(.scene-layer--hills) {
+      --sl-top: -270px;
+      --sl-h: calc(100% + 270px + 187px);
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 520px,
+        #000 calc(100% - 50px),
+        rgba(0, 0, 0, 0.667) 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 520px,
+        #000 calc(100% - 50px),
+        rgba(0, 0, 0, 0.667) 100%
+      );
+    }
+  }
+
+  .container {
+    width: min(calc(100% - 48px), var(--page));
+    margin-inline: auto;
+  }
+
+  .partners-title {
+    margin: 0 0 var(--gap-head);
+    color: var(--text);
+    text-align: center;
+  }
+
+  .partners-names {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .partners-line {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .partners-name {
+    font-family: var(--font-sans);
+    font-style: italic;
+    font-weight: var(--weight-black);
+    font-size: clamp(20px, calc(9.3px + 2.9vw), 36px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    padding-bottom: 2px;
+    color: var(--gold);
+
+    background: linear-gradient(
+      180deg,
+      var(--gold-light) 0%,
+      var(--gold) 58%,
+      var(--gold-deep) 100%
+    );
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+
+    overflow-wrap: normal;
+  }
+
+  @supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+    .partners-name {
+      background: none;
+      color: var(--gold);
+    }
+  }
+
+  .partners-followers {
+    color: var(--muted);
+  }
+
+  .partners-bust :global(picture),
+  .partners-bust :global(img),
+  .partners-shot :global(picture),
+  .partners-shot :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @supports ((mask-image: url('#m')) or (-webkit-mask-image: url('#m'))) {
+      .partners-name {
+        display: block;
+
+        block-size: calc(var(--partner-name-h) * var(--partner-name-k, 1));
+        max-inline-size: 100%;
+
+        background: var(--gold);
+        background-clip: border-box;
+        -webkit-background-clip: border-box;
+        color: transparent;
+
+        overflow: hidden;
+        padding-bottom: 0;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-position: left center;
+        mask-position: left center;
+      }
+
+      @media (max-width: 719px) {
+        .partners-person:nth-child(even) .partners-name {
+          -webkit-mask-position: right center;
+          mask-position: right center;
+        }
+      }
+
+      .partners-name--lexor2k {
+        --partner-name-k: 1.23;
+        aspect-ratio: 320 / 122;
+        -webkit-mask-image: url('../assets/media/client-name-lexor2k.webp');
+        mask-image: url('../assets/media/client-name-lexor2k.webp');
+      }
+
+      .partners-name--newsac {
+        --partner-name-k: 1.215;
+        aspect-ratio: 320 / 114;
+        -webkit-mask-image: url('../assets/media/client-name-newsac.webp');
+        mask-image: url('../assets/media/client-name-newsac.webp');
+      }
+
+      .partners-name--maaraamn {
+        --partner-name-k: 1.081;
+        aspect-ratio: 320 / 92;
+        -webkit-mask-image: url('../assets/media/client-name-maaraamn.webp');
+        mask-image: url('../assets/media/client-name-maaraamn.webp');
+      }
+
+      .partners-name--zilkenberg {
+        --partner-name-k: 1.139;
+        aspect-ratio: 320 / 98;
+        -webkit-mask-image: url('../assets/media/client-name-zilkenberg.webp');
+        mask-image: url('../assets/media/client-name-zilkenberg.webp');
+      }
+  }
+
+  @media (max-width: 719px) {
+
+    .partners-names {
+      --partner-tile: 46vw;
+
+      --partner-name-h: calc(var(--partner-tile) * 0.24);
+
+      position: relative;
+      z-index: 0;
+    }
+
+    .partners-person {
+      display: grid;
+
+      grid-template-columns: var(--partner-tile) 1fr;
+      align-items: start;
+
+      position: relative;
+    }
+
+    .partners-person:nth-child(even) {
+      grid-template-columns: 1fr var(--partner-tile);
+    }
+
+    .partners-person + .partners-person {
+      margin-block-start: calc(var(--partner-tile) * -0.29);
+    }
+
+    .partners-bust {
+      grid-area: 1 / 1;
+    }
+
+    .partners-person:nth-child(even) .partners-bust {
+      grid-area: 1 / 2;
+    }
+
+    .partners-line {
+      grid-area: 1 / 2;
+
+      padding-block-start: calc(var(--partner-tile) * 0.69);
+
+      padding-inline: 10px 24px;
+
+      align-items: flex-start;
+    }
+
+    .partners-person:nth-child(even) .partners-line {
+      grid-area: 1 / 1;
+      padding-inline: 24px 10px;
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .partners-name {
+      font-size: clamp(26px, calc(-6.6px + 9.1vw), 34px);
+    }
+
+    .partners-shot-wrap {
+      display: none;
+    }
+  }
+
+  @media (min-width: 720px) {
+    .partners-names {
+      width: min(calc(100% - 48px), var(--page));
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-inline: auto;
+      margin-block-end: var(--space-md);
+
+      gap: 0;
+    }
+
+    .partners-person {
+      grid-row: 1;
+    }
+
+    .partners-person {
+      position: relative;
+    }
+
+    .partners-person--newsac {
+      grid-column: 1;
+      inset-inline-start: 50.9%;
+    }
+
+    .partners-person--maaraamn {
+      grid-column: 2;
+      inset-inline-start: 18.8%;
+    }
+
+    .partners-person--zilkenberg {
+      grid-column: 3;
+      inset-inline-start: -17.0%;
+    }
+
+    .partners-person--lexor2k {
+      grid-column: 4;
+      inset-inline-start: -49.1%;
+    }
+
+    .partners-line {
+      align-items: center;
+      text-align: center;
+    }
+
+    .partners-name {
+      --partner-name-h: 45px;
+
+      margin-inline: auto;
+      -webkit-mask-position: center;
+      mask-position: center;
+    }
+
+    .partners-bust {
+      display: none;
+    }
+
+    .partners-shot {
+      position: relative;
+    }
+
+  }
+</style>

@@ -1,0 +1,261 @@
+{
+  "meta": {
+    "title": "MELBET Partner Programme",
+    "description": "Three ways to earn with MELBET in Mongolia: bring people in, handle money transfers, or help others from your phone. Clear terms, payouts in tugriks, a reply in 15 minutes.",
+    "og_title": "Become a MELBET partner in Mongolia"
+  },
+  "hero": {
+    "h1": "Earn together with MELBET",
+    "response_time": "We reply within 15 minutes",
+    "response_hours": "15:00–23:00 Ulaanbaatar time",
+    "stat_partners": {
+      "value": "300,000+",
+      "label": "Partners worldwide"
+    },
+    "stat_share": {
+      "value": "up to 50%",
+      "label": "Of revenue from referred players"
+    }
+  },
+  "cards": {
+    "section_title": "Choose your direction",
+    "affiliate": {
+      "name": "Affiliate",
+      "audience": "Bring in a player: earn while they stay active"
+    },
+    "bank": {
+      "name": "Bank Transfer",
+      "audience": "Requests come to you: you take a percentage"
+    },
+    "teamcash": {
+      "name": "Team Cash",
+      "audience": "A phone instead of an ATM: a percentage on every operation"
+    }
+  },
+  "steps": {
+    "title": "How to get started",
+    "step_1": {
+      "title": "Message us",
+      "body": "Tap Telegram or Facebook and tell us which direction fits you."
+    },
+    "step_2": {
+      "title": "A manager discusses the terms of cooperation with you",
+      "body": "A manager will reach out during working hours, from 15:00 to 23:00 Ulaanbaatar time, and help you work through your case."
+    },
+    "step_3": {
+      "title": "Start working",
+      "body": "Once the model and terms are confirmed together."
+    }
+  },
+  "partners": {
+    "title": "Our partners",
+    "followers_unit": "thousand followers"
+  },
+  "footer": {
+    "copyright": "© MELBET Partners",
+    "legal_note": "Final terms are agreed with your manager.",
+    "age_badge": "18+",
+    "privacy_link": "Privacy policy",
+    "follow_label": "Follow MELBET",
+    "contact_manager": "Message the manager on Telegram",
+    "channel_facebook": "Facebook",
+    "channel_instagram": "Instagram"
+  },
+  "form": {
+    "label_name": "Name",
+    "label_contact": "How should we reach you?",
+    "label_direction": "Which one fits you?",
+    "consent": "I agree to the processing of my personal data",
+    "submit": "Get my terms",
+    "submitting": "Sending…",
+    "title": "Ready to start?",
+    "lead": "Direction, name, contact. A manager will get in touch and explain everything.",
+    "contact_phone": "Phone",
+    "contact_telegram": "Telegram",
+    "contact_messenger": "Facebook",
+    "contact_placeholder": "Number, @username or a link to your profile",
+    "contact_hint_phone": "99112233",
+    "contact_hint_telegram": "@username",
+    "contact_hint_messenger": "A link to your Facebook profile",
+    "consent_link": "personal data",
+    "err_required": "Please fill in this field",
+    "err_consent": "Tick the consent box to continue",
+    "err_direction": "Choose one direction",
+    "err_invalid": "Please check this value",
+    "repeat_title": "Request in progress",
+    "repeat_body": "We have received your request. A manager will reply during working hours, from 15:00 to 23:00 Ulaanbaatar time.",
+    "repeat_reset": "Send another request"
+  },
+  "dialog": {
+    "affiliate": {
+      "receives_title": "What does the partner get?",
+      "receives": {
+        "0": {
+          "title": "Up to 50% per player"
+        },
+        "1": {
+          "title": "Income while the player stays active"
+        },
+        "2": {
+          "title": "Fast payouts"
+        },
+        "3": {
+          "title": "Link and promo code"
+        },
+        "4": {
+          "title": "Stats in your account"
+        },
+        "5": {
+          "title": "A personal manager"
+        }
+      },
+      "needs_title": "What do you need to earn?",
+      "needs": {
+        "0": { "lead": "An audience", "tail": "a channel, group, blog or website" },
+        "1": { "lead": "Regular content", "tail": "posts and videos with your link" },
+        "2": { "lead": "Understanding your audience", "tail": "their geography, interests and language" },
+        "3": { "lead": "Advertising rules", "tail": "of the brand and your region" },
+        "4": { "lead": "No experience needed", "tail": "we train you and provide materials" }
+      }
+    },
+    "bank": {
+      "receives_title": "What does the partner get?",
+      "receives": {
+        "0": {
+          "title": "Commission in ₮ right after every operation"
+        },
+        "1": {
+          "title": "We bring you the clients"
+        },
+        "2": {
+          "title": "A method of your choice"
+        },
+        "3": {
+          "title": "Stats in your account"
+        },
+        "4": {
+          "title": "Training before you start"
+        },
+        "5": {
+          "title": "A personal manager"
+        }
+      },
+      "needs_title": "What do you need to earn?",
+      "needs": {
+        "0": { "lead": "A payment method", "tail": "an account or wallet in Mongolia for receiving and sending" },
+        "1": { "lead": "Verification details", "tail": "an individual or a company both work" },
+        "2": { "lead": "Working capital", "tail": "discuss the amount with your manager" },
+        "3": { "lead": "Available around the clock", "tail": "you can work as a team, in shifts" },
+        "4": { "lead": "A computer and internet", "tail": "a phone works too, but a computer is more convenient" }
+      }
+    },
+    "teamcash": {
+      "receives_title": "What does the partner get?",
+      "receives": {
+        "0": {
+          "title": "Commission in ₮ right after every operation"
+        },
+        "1": {
+          "title": "Double income with Affiliate"
+        },
+        "2": {
+          "title": "Work from anywhere"
+        },
+        "3": {
+          "title": "Stats in your account"
+        },
+        "4": {
+          "title": "Training before you start"
+        },
+        "5": {
+          "title": "A personal manager"
+        }
+      },
+      "needs_title": "What do you need to earn?",
+      "needs": {
+        "0": { "lead": "A smartphone with the app", "tail": "every operation runs through Team Cash" },
+        "1": { "lead": "A balance in the app", "tail": "it funds deposits for clients" },
+        "2": { "lead": "Money for payouts", "tail": "cash or transfer, whatever suits the client" },
+        "3": { "lead": "Your own audience", "tail": "social media, people you know, or your own spot in Mongolia" },
+        "4": { "lead": "Time to stay in touch", "tail": "clients reach out whenever it suits them" }
+      }
+    }
+  },
+  "faq": {
+    "q_support": "Is there support while I work?",
+    "a_support": "Yes, your manager helps you at every stage of your work, and you can always come to them with any question.",
+    "q_onboarding": "How do I get set up?",
+    "a_onboarding": "Your manager collects the details needed, explains the terms, and helps you set up your account.",
+    "q_bt_capital": "How much money do you need to get started with Bank Transfer?",
+    "a_bt_capital": "The amount is agreed with your manager, based on your region and your resources.",
+    "q_training": "Do I need experience?",
+    "a_training": "No, your manager walks you through onboarding.",
+    "q_currency": "What currency am I paid in?",
+    "a_currency": "We pay out in ₮ or in other currencies. Ask your manager for the exact details.",
+    "title": "Frequently asked questions"
+  },
+  "pages": {
+    "privacy_title": "Privacy Policy",
+    "privacy_intro": "How we collect, use, and store your data",
+    "privacy_sections": {
+      "0": {
+        "heading": "What data we collect",
+        "body": "When you contact us via the form or messenger buttons, we collect what you enter yourself: your name, the contact channel you picked and the contact itself - a phone number, a Telegram handle or a link to your Facebook profile - and the direction you're interested in."
+      },
+      "1": {
+        "heading": "Why we collect it",
+        "body": "We use this data only to connect you with a MELBET partnership manager and confirm the terms of cooperation. We do not sell or share your data with third parties for marketing."
+      },
+      "2": {
+        "heading": "How long we keep it",
+        "body": "Submitted lead data is stored for up to 90 days, after which it is automatically deleted from our systems."
+      },
+      "3": {
+        "heading": "Analytics and cookies",
+        "body": "To see where visitors come from and which parts of the page actually help them, we use Google Analytics 4, Microsoft Clarity, Cloudflare Web Analytics and the BeMob click tracker. The recipients of this data are Google LLC, Microsoft Corporation and Cloudflare, Inc. What we collect is anonymous statistics: pages viewed and actions taken on the site, the referral source, device type and language. Your name, phone number and messenger handle never reach analytics: they travel through the form only, and only to a manager. The referral tag is kept in your own browser (localStorage) for up to 90 days - the same period we keep a request. You can opt out through your own browser: private browsing, a content blocker, or by disallowing site data. Visitors from the European Economic Area, the UK and Switzerland are not counted at all by default: there, collection starts only with their own decision. If you made such a decision, you can change it with the button below, in this same section."
+      },
+      "4": {
+        "heading": "Your rights & contact",
+        "body": "You can ask us to review, correct, or delete your data at any time by contacting your manager or writing to us via Telegram."
+      }
+    },
+    "notfound_h1": "Page not found",
+    "notfound_body": "The page you're looking for doesn't exist or has moved.",
+    "notfound_cta": "Back to home",
+    "privacy_updated": "Updated: 13 August 2026",
+    "privacy_back": "Back to the main page",
+    "privacy_contact_link": "Message us on Telegram",
+    "thanks_h1": "Request received",
+    "thanks_body": "We passed it to the partnership manager. They will get in touch using the contact you left.",
+    "thanks_reply": "We reply within 15 minutes",
+    "thanks_hours": "15:00–23:00 Ulaanbaatar time",
+    "thanks_cta": "Message us on Telegram now",
+    "thanks_home": "Back to home"
+  },
+  "contact": {
+    "telegram": "Telegram",
+    "messenger": "FB Messenger",
+    "messenger_short": "Facebook"
+  },
+  "consent": {
+    "aria_label": "Consent request for anonymous analytics",
+    "text": "We collect nothing yet. With permission, anonymously: pages, where you came from, device, language. Never your contacts.",
+    "more": "Details",
+    "accept": "Allow",
+    "decline": "No thanks",
+    "control_label": "Statistics collection control",
+    "state_on": "Statistics are on by your decision.",
+    "state_off": "Statistics are off by your decision, and the analytics cookies have been deleted from this device.",
+    "action_off": "Turn statistics off",
+    "action_on": "Turn statistics on"
+  },
+  "api": {
+    "err_title": "Request not sent",
+    "err_generic": "Something went wrong. Please try again in a moment.",
+    "err_rate_limited": "Too many attempts. Please wait a little and try again.",
+    "err_captcha": "The check did not pass. Refresh the page and try again.",
+    "err_validation": "Please check the fields you filled in and send the request again.",
+    "err_network": "We could not send it - the connection seems to have dropped. Please try again.",
+    "fallback_cta": "Message a manager on Telegram"
+  }
+}

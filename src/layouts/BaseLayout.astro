@@ -1,0 +1,176 @@
+---
+import '../styles/tokens.css';
+import { PAGE_ROUTES, type Locale } from '../i18n/routes';
+import { t } from '../i18n/t';
+import { config, ANALYTICS_ENABLED } from '../config';
+import AttributionHead from '../components/AttributionHead.astro';
+import ConsentBanner from '../components/ConsentBanner.astro';
+
+type PageId = 'home' | 'privacy' | 'notFound' | 'thanks';
+
+interface Props {
+  title: string;
+  description: string;
+  pageId?: PageId;
+}
+
+const { title, description, pageId = 'home' } = Astro.props;
+const currentLocale = (Astro.currentLocale ?? 'mn') as Locale;
+const ogImageUrl = new URL(`/og-${currentLocale}.png`, Astro.site).toString();
+
+const NOINDEX_PAGES = new Set<PageId>(['notFound', 'thanks']);
+const isNoIndex = NOINDEX_PAGES.has(pageId);
+
+const canonicalUrl = isNoIndex
+  ? null
+  : new URL(PAGE_ROUTES[pageId][currentLocale], Astro.site).toString();
+
+const OG_LOCALE: Record<Locale, string> = { mn: 'mn_MN', ru: 'ru_RU', en: 'en_US' };
+const otherLocales = (Object.keys(OG_LOCALE) as Locale[]).filter((l) => l !== currentLocale);
+
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'MELBET',
+
+  alternateName: ['Мелбет', 'МЕЛБЕТ', 'Мэлбэт'],
+  url: config.siteUrl,
+  logo: new URL('/android-chrome-512x512.png', Astro.site).toString(),
+
+  sameAs: [config.brandChannels.facebook, config.brandChannels.instagram],
+
+  areaServed: { '@type': 'Country', name: 'Mongolia' },
+  contactPoint: {
+    '@type': 'ContactPoint',
+    contactType: 'customer support',
+    availableLanguage: ['mn', 'ru', 'en'],
+
+    hoursAvailable: {
+      '@type': 'OpeningHoursSpecification',
+      opens: '15:00',
+      closes: '23:00',
+      dayOfWeek: [
+        'Monday',
+        'Tuesday',
+        'Wednesday',
+        'Thursday',
+        'Friday',
+        'Saturday',
+        'Sunday',
+      ],
+    },
+  },
+};
+const websiteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'MELBET Partners',
+  url: config.siteUrl,
+  inLanguage: currentLocale,
+};
+---
+<!doctype html>
+<html lang={currentLocale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07090b" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <meta
+      property="og:title"
+      content={pageId === 'home' ? t(currentLocale, 'meta.og_title') : title}
+    />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content={pageId === 'home' ? t(currentLocale, 'meta.og_title') : title}
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MELBET Partners" />
+    <meta property="og:locale" content={OG_LOCALE[currentLocale]} />
+    {otherLocales.map((loc) => (
+      <meta property="og:locale:alternate" content={OG_LOCALE[loc]} />
+    ))}
+    {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content={pageId === 'home' ? t(currentLocale, 'meta.og_title') : title}
+    />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+
+    <meta
+      name="twitter:image:alt"
+      content={pageId === 'home' ? t(currentLocale, 'meta.og_title') : title}
+    />
+
+    <link
+      rel="preload"
+      href="/fonts/manrope-subset.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    {
+      isNoIndex ? (
+        <meta name="robots" content="noindex, follow" />
+      ) : (
+        <>
+          {Object.entries(PAGE_ROUTES[pageId]).map(([locale, path]) => (
+            <link rel="alternate" hreflang={locale} href={new URL(path, Astro.site)} />
+          ))}
+          <link
+            rel="alternate"
+            hreflang="x-default"
+            href={new URL(PAGE_ROUTES[pageId].mn, Astro.site)}
+          />
+          <link rel="canonical" href={canonicalUrl} />
+        </>
+      )
+    }
+    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+
+    <AttributionHead />
+  </head>
+  <body>
+    <slot />
+
+    {ANALYTICS_ENABLED && <ConsentBanner locale={currentLocale} />}
+    <script src="../scripts/interactive.ts"></script>
+  </body>
+</html>
+<style is:global>
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    min-height: 100%;
+  }
+
+  body {
+
+    min-height: 100svh;
+    background: var(--bg);
+    color: var(--text);
+
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+</style>

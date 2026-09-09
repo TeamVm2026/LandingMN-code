@@ -1,0 +1,171 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import ConsentControl from './ConsentControl.astro';
+import { t, dictionaries, type Locale } from '../i18n/t';
+import { PAGE_ROUTES } from '../i18n/routes';
+import { config, ANALYTICS_ENABLED } from '../config';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const sections = Object.values(dictionaries[locale].pages.privacy_sections);
+
+const lastIndex = sections.length - 1;
+
+const ANALYTICS_SECTION_INDEX = 3;
+---
+
+<BaseLayout
+  title={t(locale, 'pages.privacy_title')}
+  description={t(locale, 'pages.privacy_intro')}
+  pageId="privacy"
+>
+  <Header locale={locale} pageId="privacy" />
+  <main class="privacy-main">
+    <article class="privacy-doc">
+      <header class="privacy-head">
+        <h1 class="privacy-title">{t(locale, 'pages.privacy_title')}</h1>
+        <p class="privacy-intro type-body">{t(locale, 'pages.privacy_intro')}</p>
+
+        <p class="privacy-updated type-label">{t(locale, 'pages.privacy_updated')}</p>
+      </header>
+
+      {
+        sections.map((section, index) => (
+          <section class="privacy-section">
+            <h2 class="privacy-heading">{section.heading}</h2>
+            <p class="privacy-body type-body">{section.body}</p>
+
+            {ANALYTICS_ENABLED && index === ANALYTICS_SECTION_INDEX && (
+              <ConsentControl locale={locale} />
+            )}
+            {index === lastIndex && (
+              <a
+                class="privacy-contact type-body"
+                href={config.tgContactUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {t(locale, 'pages.privacy_contact_link')}
+              </a>
+            )}
+          </section>
+        ))
+      }
+
+      <a class="privacy-back type-body" href={PAGE_ROUTES.home[locale]}>
+        {t(locale, 'pages.privacy_back')}
+      </a>
+    </article>
+  </main>
+  <Footer locale={locale} />
+</BaseLayout>
+
+<style>
+  .privacy-main {
+    width: 100%;
+  }
+
+  .privacy-doc {
+
+    max-width: 68ch;
+    margin-inline: auto;
+    padding: var(--space-2xl) var(--space-lg) var(--space-3xl);
+  }
+
+  @media (min-width: 860px) {
+    .privacy-doc {
+      padding: var(--space-3xl) var(--space-2xl);
+    }
+  }
+
+  .privacy-head {
+    padding-bottom: var(--space-lg);
+    margin-bottom: var(--space-xl);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .privacy-title {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-sans);
+    font-weight: var(--weight-bold);
+    font-size: clamp(26px, calc(18px + 2.2vw), 40px);
+    line-height: 1.12;
+    letter-spacing: -0.02em;
+    color: var(--text);
+
+    overflow-wrap: break-word;
+    hyphens: auto;
+  }
+
+  .privacy-intro {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .privacy-updated {
+    margin: var(--space-sm) 0 0;
+    color: var(--muted);
+  }
+
+  .privacy-section {
+    margin-top: var(--space-xl);
+  }
+
+  .privacy-heading {
+    margin: 0 0 var(--space-sm);
+    font-family: var(--font-sans);
+    font-weight: var(--weight-bold);
+    font-size: clamp(18px, calc(15px + 0.8vw), 22px);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    overflow-wrap: break-word;
+  }
+
+  .privacy-body {
+    margin: 0;
+    color: var(--muted);
+  }
+
+  .privacy-contact,
+  .privacy-back {
+    display: inline-block;
+    color: var(--gold);
+    text-decoration: underline;
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    transition: color var(--motion-fast) var(--ease-charge);
+  }
+
+  .privacy-contact {
+    margin-top: var(--space-sm);
+  }
+
+  .privacy-back {
+    margin-top: var(--space-2xl);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .privacy-contact:hover,
+    .privacy-back:hover {
+      color: var(--gold-light);
+    }
+  }
+
+  .privacy-contact:active {
+    color: var(--gold-light);
+  }
+
+  .privacy-back:active {
+    color: var(--gold-light);
+    transform: scale(var(--press-scale));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+  }
+</style>

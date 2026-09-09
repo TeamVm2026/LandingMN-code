@@ -1,0 +1,117 @@
+---
+import IconClock from './icons/IconClock.astro';
+import { t, type Locale, type TranslationKey } from '../i18n/t';
+
+interface Props {
+  locale: Locale;
+
+  messageKey: TranslationKey;
+
+  hoursKey: TranslationKey;
+
+  variant?: 'capsule' | 'plain';
+}
+
+const { locale, messageKey, hoursKey, variant = 'capsule' } = Astro.props;
+
+const promise = t(locale, messageKey);
+const hours = t(locale, hoursKey);
+
+const hoursMatch = hours.match(/\d{1,2}:\d{2}\s*[–—-]\s*\d{1,2}:\d{2}/);
+const hoursAt = hoursMatch ? hours.indexOf(hoursMatch[0]) : -1;
+const hoursHead = hoursMatch ? hours.slice(0, hoursAt) : '';
+const hoursTail = hoursMatch ? hours.slice(hoursAt + hoursMatch[0].length) : '';
+
+const hoursTailLead = hoursTail.match(/^\s*/)?.[0] ?? '';
+const hoursTailRest = hoursTail.slice(hoursTailLead.length);
+
+const SEPARATOR = '\u00A0\u00B7\u00A0';
+const withSeparator = variant === 'plain';
+---
+
+<p class:list={['hero-status', `hero-status--${variant}`]}>
+
+  {variant === 'capsule' && (
+    <span class="hero-status-icon" aria-hidden="true"><IconClock /></span>
+  )}
+
+  <span class:list={['hero-status-text', withSeparator ? 'type-label' : 'type-body']}
+    ><span class="hero-status-promise">{promise}</span>{withSeparator && <span class="hero-status-sep" aria-hidden="true">{SEPARATOR}</span>}{variant === 'capsule' && !withSeparator && ' '}<span class="hero-status-hours">{hoursMatch ? (<Fragment>{hoursHead}<span class="nowrap">{hoursMatch[0]}</span>{hoursTailLead}<span class="hero-status-zone">{hoursTailRest}</span></Fragment>) : hours}</span
+  ></span>
+</p>
+
+<style>
+  .hero-status--capsule {
+    display: inline-flex;
+
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    padding: 9px 16px 9px 13px;
+    border-radius: var(--radius-control);
+
+    background: var(--glass-inset);
+    box-shadow:
+      inset 0 0 0 1px var(--glass-inset-hair),
+      inset 0 1px 0 var(--glass-inset-rim);
+  }
+
+  .hero-status--plain {
+    display: block;
+    margin: 0;
+    padding: 0;
+  }
+
+  .hero-status--plain .hero-status-text {
+    display: block;
+    column-gap: normal;
+
+    text-wrap: wrap;
+  }
+
+  .hero-status-sep {
+    white-space: nowrap;
+  }
+
+  .hero-status--plain .hero-status-zone {
+    white-space: nowrap;
+  }
+
+  .hero-status-text {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--space-sm);
+    color: var(--text);
+    opacity: 0.86;
+
+    text-wrap: pretty;
+  }
+
+  .hero-status-text :global(.nowrap) {
+    white-space: nowrap;
+  }
+
+  .hero-status-icon {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+
+    margin-top: 2px;
+
+    color: var(--gold);
+  }
+
+  .hero-status-icon :global(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .hero-status--capsule {
+      box-shadow: none;
+    }
+  }
+</style>

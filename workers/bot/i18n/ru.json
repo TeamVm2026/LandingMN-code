@@ -1,0 +1,10 @@
+{
+  "reply.greeting": "Здравствуйте! Вы пришли с лендинга партнёрской программы MELBET в Монголии.",
+  "reply.handoff": "Ваш запрос передан менеджеру — напишите ему прямо сейчас, он уже ждёт.",
+  "reply.manager_button": "Написать менеджеру",
+  "reply.direction_line": "Направление: {direction}",
+  "reply.repeat_note": "Вы уже с нами — менеджер ниже.",
+  "profile.short_description": "MELBET Монголия — партнёрская программа. Сразу даём контакт менеджера.",
+  "profile.description": "Официальный бот партнёрской программы MELBET в Монголии. Три направления: Affiliate, Bank Transfer, Team Cash. Нажмите START — контакт менеджера придёт сразу же.",
+  "profile.command_start": "Начать — получить контакт менеджера"
+}

@@ -1,0 +1,243 @@
+---
+import { t } from '../i18n/t';
+import { PAGE_ROUTES, type Locale } from '../i18n/routes';
+
+interface Props {
+  locale: Locale;
+
+  pageId?: 'home' | 'privacy' | 'notFound' | 'thanks';
+}
+
+const { locale, pageId = 'home' } = Astro.props;
+
+const locales: Locale[] = ['mn', 'ru', 'en'];
+
+const localeLabel: Record<Locale, string> = { mn: 'MN', ru: 'RU', en: 'EN' };
+
+const langGroupLabel: Record<Locale, string> = { mn: 'Хэл сонгох', ru: 'Выбор языка', en: 'Language' };
+
+const navLabel: Record<Locale, string> = { mn: 'Үндсэн цэс', ru: 'Основная навигация', en: 'Main navigation' };
+
+const brandHref = pageId === 'home' ? '#home' : PAGE_ROUTES.home[locale];
+
+const routesForPage = pageId === 'notFound' ? PAGE_ROUTES.home : PAGE_ROUTES[pageId];
+
+---
+
+<header class="site-header">
+  <div class="site-header-inner">
+    <a class="brand" href={brandHref} aria-label="MELBET Partners">
+      <span>MEL</span><span class="brand-accent">BET</span>
+    </a>
+
+    {pageId === 'home' && (
+      <nav class="main-nav" aria-label={navLabel[locale]}>
+        <a class="type-label" href="#programs">{t(locale, 'cards.section_title')}</a>
+        <a class="type-label" href="#how-to-start">{t(locale, 'steps.title')}</a>
+        <a class="type-label" href="#lead-form">{t(locale, 'form.title')}</a>
+      </nav>
+    )}
+
+    <div class="header-actions">
+
+      <div class="lang-switch" role="group" aria-label={langGroupLabel[locale]}>
+        {locales.map((loc) => (
+          loc === locale ? (
+            <span class="lang-item lang-current type-label" lang={loc} aria-current="true">{localeLabel[loc]}</span>
+          ) : (
+            <a class="lang-item type-label" href={routesForPage[loc]} hreflang={loc} lang={loc}>{localeLabel[loc]}</a>
+          )
+        ))}
+      </div>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background: none;
+  }
+
+  .site-header:focus-within {
+    z-index: 50;
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .site-header {
+      background: var(--bg);
+    }
+  }
+
+  .site-header-inner {
+    min-height: 82px;
+    width: min(calc(100% - 34px), var(--page));
+    margin-inline: auto;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: var(--space-lg);
+  }
+
+  @media (max-width: 859px) {
+    .site-header-inner {
+      min-height: 74px;
+    }
+  }
+
+  .brand {
+    grid-column: 1;
+  }
+  .main-nav {
+    grid-column: 2;
+  }
+  .header-actions {
+    grid-column: 3;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+
+    text-decoration: none;
+    font-family: var(--font-sans);
+    font-weight: var(--weight-bold);
+    font-size: clamp(22px, 1.6vw + 18px, 30px);
+    letter-spacing: -0.02em;
+    color: var(--text);
+
+    transform: skewX(-11deg);
+
+    text-shadow: 0 1px 3px rgba(4, 6, 8, 0.55);
+  }
+
+  .brand:active {
+    transform: skewX(-11deg) scale(var(--press-scale));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+  }
+
+  .brand-accent {
+    color: var(--gold);
+  }
+
+  @media (max-width: 859px) {
+    .brand {
+      font-size: 22px;
+    }
+  }
+
+  .main-nav {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xl);
+  }
+  @media (min-width: 1050px) {
+    .main-nav {
+      display: flex;
+    }
+  }
+  .main-nav a {
+    position: relative;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color var(--motion-fast) var(--ease-charge);
+  }
+  .main-nav a::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    bottom: -8px;
+    left: 0;
+    height: 1px;
+    scale: 0 1;
+    background: var(--gold);
+    transform-origin: center;
+    transition: scale var(--motion-fast) var(--ease-charge);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .main-nav a:hover {
+      color: var(--text);
+    }
+    .main-nav a:hover::after {
+      scale: 1 1;
+    }
+  }
+  .main-nav a:focus-visible {
+    color: var(--text);
+  }
+  .main-nav a:focus-visible::after {
+    scale: 1 1;
+  }
+
+  .main-nav a:active {
+    color: var(--text);
+  }
+  .main-nav a:active::after {
+    scale: 1 1;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    justify-self: end;
+    gap: var(--space-sm);
+  }
+
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+  }
+  .lang-item {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: var(--muted);
+    text-decoration: none;
+
+    text-shadow: 0 1px 3px rgba(4, 6, 8, 0.55);
+
+    transition:
+      color var(--motion-fast) var(--ease-charge),
+      transform var(--motion-base) var(--ease-spring);
+  }
+
+  .lang-item + .lang-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 1px;
+    height: 14px;
+    transform: translateY(-50%);
+    background: var(--line);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    a.lang-item:hover {
+      color: var(--text);
+    }
+  }
+  a.lang-item:focus-visible {
+    color: var(--text);
+  }
+
+  a.lang-item:active {
+    transform: scale(var(--press-scale));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+  }
+
+  .lang-current {
+    color: var(--gold);
+    font-weight: var(--weight-bold);
+  }
+</style>

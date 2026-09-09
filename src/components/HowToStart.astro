@@ -1,0 +1,256 @@
+---
+import { t, type Locale } from '../i18n/t';
+import ContactActions from './ContactActions.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const steps = [
+  { number: '1', title: t(locale, 'steps.step_1.title'), body: t(locale, 'steps.step_1.body') },
+  { number: '2', title: t(locale, 'steps.step_2.title'), body: t(locale, 'steps.step_2.body') },
+  { number: '3', title: t(locale, 'steps.step_3.title'), body: t(locale, 'steps.step_3.body') },
+] as const;
+---
+
+<section class="how-to-start" id="how-to-start" aria-labelledby="how-to-start-heading">
+  <div class="container">
+    <div class="spine-head">
+      <h2 id="how-to-start-heading" class="type-h2">{t(locale, 'steps.title')}</h2>
+    </div>
+
+    <ol class="spine">
+      {
+        steps.map((step, index) => (
+          <li class="spine-step reveal-item">
+            <span class="spine-node" aria-hidden="true">{step.number}</span>
+            <div class="spine-body">
+              <h3 class="spine-title type-body-bold">{step.title}</h3>
+              <p class="spine-text type-body">{step.body}</p>
+
+              {index === 0 && (
+                /* ⛔ ОБЁРТКА СУЩЕСТВУЕТ РАДИ ОПОРЫ СЛОЯ, А НЕ РАДИ РАСКЛАДКИ.
+                   Полоса дымки обязана стоять ровно за парой кнопок и ехать
+                   вместе с ней на всех ширинах и во всех трёх локалях, где
+                   подписи разной длины. Привязка к `.spine-body` дала бы
+                   ВЕРТИКАЛЬНОЕ СМЕЩЕНИЕ В ПИКСЕЛЯХ от верха текста — то есть
+                   ровно тот класс дефекта, который заказчик уже находил
+                   («задний фон увеличивается», разбор у `.scene-drift`):
+                   текст шага на монгольском длиннее русского, и полоса
+                   промахнулась бы мимо кнопок. Обёртка равна самой паре,
+                   поэтому `inset-block-start: 50%` у слоя — это середина
+                   ПАРЫ по построению, а не число.
+
+                   Собственного контекста наложения обёртка не создаёт
+                   (`z-index` не задан) — иначе слой на −1 ушёл бы под краску
+                   страницы, как это уже ловилось у `.trust-faq`. */
+                <div class="spine-cta">
+
+                  <ContactActions
+                    locale={locale}
+                    variant="hero"
+                    tone="neutral"
+                    trackPlacement="steps"
+                    class="spine-actions"
+                  />
+                </div>
+              )}
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .how-to-start {
+    padding-block: var(--gap-section) var(--space-lg);
+    overflow-x: clip;
+  }
+
+  .container {
+    width: min(calc(100% - 48px), var(--page));
+    margin-inline: auto;
+  }
+
+  .spine-head h2 {
+    margin: 0 0 var(--gap-head);
+    color: var(--text);
+  }
+
+  .spine {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .spine-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    top: 84px;
+    bottom: 8px;
+    left: 16px;
+    width: 1px;
+    background: var(--gold);
+  }
+
+  .spine-step {
+    position: relative;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-md);
+    padding-bottom: clamp(28px, 4vw, 44px);
+  }
+
+  .spine-step:last-child {
+    padding-bottom: 0;
+  }
+
+  .spine-node {
+    display: block;
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-weight: var(--weight-black);
+    font-size: 74px;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    text-align: left;
+  }
+
+  .spine-body {
+    min-width: 0;
+    padding-top: 6px;
+  }
+
+  .spine-title {
+    margin: 0 0 var(--space-sm);
+    color: var(--text);
+  }
+
+  .spine-text {
+    margin: 0;
+    max-width: 62ch;
+    color: var(--muted);
+  }
+
+  .spine-body :global(.spine-actions) {
+    margin-top: var(--space-md);
+  }
+
+  .spine-cta {
+    position: relative;
+    margin-top: var(--space-md);
+  }
+
+  .spine-cta :global(.spine-actions) {
+    margin-top: 0;
+  }
+
+  @media (min-width: 560px) {
+    .spine-body :global(.spine-actions .contact-btn) {
+      min-width: 0;
+    }
+  }
+
+  @media (min-width: 860px) {
+    .spine-body :global(.spine-actions .contact-btn) {
+      min-height: 44px;
+    }
+  }
+
+  @media (min-width: 1050px) {
+
+    .container {
+      display: block;
+    }
+
+    .spine-head {
+      position: static;
+    }
+
+    .spine-head {
+      text-align: center;
+    }
+
+    .spine-head h2 {
+      margin-bottom: var(--gap-head);
+    }
+
+    .spine {
+      display: grid;
+
+      grid-template-columns: min-content minmax(0, 1fr) minmax(0, 1fr);
+
+      --spine-node-w: 44px;
+
+      --spine-gap: clamp(40px, 7vw, 104px);
+
+      --spine-line-inset: calc(var(--spine-gap) * 0.2);
+
+      --spine-node-font: clamp(48px, 5vw, 72px);
+      column-gap: var(--spine-gap);
+      row-gap: 0;
+      align-items: start;
+    }
+
+    .spine-step:not(:last-child)::before {
+      top: calc(var(--spine-node-font) / 2);
+      bottom: auto;
+
+      left: calc(100% + var(--spine-line-inset));
+      width: calc(var(--spine-gap) - var(--spine-line-inset) * 2);
+      height: 1px;
+
+      background: color-mix(in srgb, var(--gold-deep) 62%, transparent);
+    }
+
+    .spine-step {
+
+      grid-template-columns: var(--spine-node-w) minmax(min-content, 1fr);
+      gap: var(--space-md);
+      padding-bottom: 0;
+    }
+
+    .spine-node {
+      font-size: var(--spine-node-font);
+      font-weight: var(--weight-black);
+      line-height: 1;
+      letter-spacing: -0.04em;
+      color: var(--text);
+      align-self: start;
+    }
+
+    .spine-body {
+      padding-top: 2px;
+    }
+
+    .spine-text {
+      max-width: 34ch;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .spine-title {
+      max-width: 30ch;
+    }
+
+    .spine-body .spine-cta {
+      margin-top: var(--space-md);
+    }
+
+    .spine-body :global(.spine-actions) {
+      flex-wrap: nowrap;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .spine-head {
+      position: static;
+    }
+  }
+</style>

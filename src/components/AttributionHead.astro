@@ -1,0 +1,43 @@
+---
+import {
+  ATTRIBUTION_KEY,
+  ATTRIBUTION_TTL_MS,
+  ATTRIBUTION_VERSION,
+  CAPTURED_PARAMS,
+  MARKS_MAX_COUNT,
+  PRIORITY_MARKS,
+  VALUE_MAX_LEN,
+} from '../lib/attribution';
+---
+<script
+  is:inline
+  define:vars={{
+    K: ATTRIBUTION_KEY,
+    V: ATTRIBUTION_VERSION,
+    TTL: ATTRIBUTION_TTL_MS,
+    P: CAPTURED_PARAMS,
+    L: VALUE_MAX_LEN,
+    N: MARKS_MAX_COUNT,
+    Q: PRIORITY_MARKS,
+  }}
+>
+try {
+var now = Date.now(), a = {}, m = {}, v, r;
+new URLSearchParams(location.search).forEach(function (val, key) {
+if (val && (P.indexOf(key) >= 0 || /^sub_?id_?\d*$/.test(key))) a[key] = val.slice(0, L);
+});
+var ks = Object.keys(a), pr = function (k) { return Q.indexOf(k) >= 0; };
+ks.filter(pr).concat(ks.filter(function (k) { return !pr(k); })).slice(0, N).forEach(function (k) { m[k] = a[k]; });
+var ref = '';
+try { ref = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) {}
+var t = {ts: now, m: m, ref: ref, lp: location.pathname}, has = Object.keys(m).length > 0;
+var p = null;
+try { v = localStorage.getItem(K); if (v) p = JSON.parse(v); } catch (e) {}
+if (p && (p.v !== V || !p.ft || typeof p.ft.ts !== 'number' || now - p.ft.ts > TTL)) p = null;
+if (!p || has) {
+r = p ? {v: V, ft: p.ft, fc: p.fc || null, lt: p.lt || p.ft, n: +p.n || 0} : {v: V, ft: t, fc: null, lt: t, n: 0};
+if (has) { if (!r.fc) r.fc = t; r.lt = t; r.n++; }
+try { localStorage.setItem(K, JSON.stringify(r)); } catch (e) {}
+}
+} catch (e) { /* тишина намеренная — см. шапку */ }
+</script>

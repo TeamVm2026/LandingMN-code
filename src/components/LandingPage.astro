@@ -1,0 +1,387 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './Header.astro';
+import Hero from './Hero.astro';
+import DirectionCards from './DirectionCards.astro';
+import HowToStart from './HowToStart.astro';
+import FaqAccordion from './FaqAccordion.astro';
+import LeadFormMarkup from './LeadFormMarkup.astro';
+import Partners from './Partners.astro';
+import Footer from './Footer.astro';
+import SceneLayer from './SceneLayer.astro';
+
+import cloudsMain from '../assets/media/scene-clouds-main.webp';
+import cloudsVeil from '../assets/media/scene-clouds-veil.webp';
+import cloudsCards from '../assets/media/scene-clouds-cards.webp';
+import cloudsFaq from '../assets/media/scene-clouds-faq.webp';
+
+import { t, type Locale } from '../i18n/t';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+---
+
+<BaseLayout title={t(locale, 'meta.title')} description={t(locale, 'meta.description')} pageId="home">
+  <Header locale={locale} pageId="home" />
+  <main>
+    <Hero locale={locale} />
+
+    <div class="page-surface">
+
+    <SceneLayer
+      src={cloudsVeil}
+      modifier="scene-layer--veil-hero"
+      sizes="(max-width: 859px) 300vw, 138vw"
+      widths={[900, 1400, 2000]}
+      eager
+    />
+    <SceneLayer
+      src={cloudsMain}
+      modifier="scene-layer--main"
+      sizes="(max-width: 859px) 300vw, 128vw"
+      widths={[900, 1400, 2000]}
+      eager
+    />
+
+    <section id="programs" class="block-programs" aria-labelledby="direction-cards-title">
+
+      <SceneLayer
+        src={cloudsCards}
+        modifier="scene-layer--cards"
+        sizes="(max-width: 859px) 320vw, 134vw"
+        widths={[900, 1400, 2000]}
+        repeat={3}
+      />
+      <div class="container">
+        <DirectionCards locale={locale} />
+      </div>
+    </section>
+
+    <SceneLayer
+      src={cloudsFaq}
+      modifier="scene-layer--faq"
+      sizes="(max-width: 859px) 310vw, 130vw"
+      widths={[900, 1400, 2000]}
+    />
+
+    <SceneLayer
+      src={cloudsVeil}
+      modifier="scene-layer--veil-faq"
+      sizes="(max-width: 859px) 320vw, 134vw"
+      widths={[900, 1400, 2000]}
+      cover
+      repeat={7}
+    />
+
+    <HowToStart locale={locale} />
+
+    <div class="trust-faq">
+      <div class="container">
+        <section class="trust-faq-accordion" aria-labelledby="faq-title">
+          <h2 id="faq-title" class="type-h2 trust-faq-title">{t(locale, 'faq.title')}</h2>
+          <FaqAccordion locale={locale} />
+        </section>
+      </div>
+    </div>
+
+    <LeadFormMarkup locale={locale} />
+
+    <Partners locale={locale} />
+
+    </div>
+  </main>
+
+  <Footer locale={locale} onScene />
+
+</BaseLayout>
+
+<style>
+  .container {
+    width: min(calc(100% - 48px), var(--page));
+    margin-inline: auto;
+  }
+
+  :global(:root),
+  :global(:root > body) {
+    background-color: var(--bg-scene);
+  }
+
+  .page-surface {
+    position: relative;
+
+    z-index: 40;
+    background-repeat: no-repeat;
+
+    background-image: linear-gradient(
+      180deg,
+      #07090b 0,
+      #0e121a 420px,
+      #0c1017 56%,
+      #0a0d14 107%
+    );
+  }
+
+  :global(#programs),
+  :global(#how-to-start),
+  :global(#lead-form),
+  :global(#home) {
+    scroll-margin-top: 96px;
+  }
+
+  .block-programs {
+    padding-bottom: var(--space-lg);
+
+    clip-path: inset(0 0 -4000px 0);
+
+    position: relative;
+  }
+
+  .page-surface > :global(.scene-layer--veil-hero) {
+    --sl-top: -200px;
+    --sl-h: 520px;
+    --sl-w: 300%;
+
+    --sl-opacity: 0.42;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.333) 0,
+      #000 200px,
+      #000 calc(100% - 180px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.333) 0,
+      #000 200px,
+      #000 calc(100% - 180px),
+      transparent 100%
+    );
+  }
+
+  .page-surface > :global(.scene-layer--main) {
+    --sl-top: -190px;
+    --sl-h: 1000px;
+    --sl-w: 300%;
+    --sl-opacity: 0.9;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.367) 0,
+      #000 190px,
+      #000 calc(100% - 280px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.367) 0,
+      #000 190px,
+      #000 calc(100% - 280px),
+      transparent 100%
+    );
+  }
+
+  .block-programs > :global(.scene-layer--cards) {
+    --sl-top: -60px;
+    --sl-h: calc(100% + 220px);
+    --sl-w: 320%;
+    --sl-opacity: 0.5;
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 200px,
+      #000 calc(100% - 260px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 200px,
+      #000 calc(100% - 260px),
+      transparent 100%
+    );
+  }
+
+  .page-surface > :global(.scene-layer--faq) {
+    --sl-top: 886px;
+    --sl-h: 760px;
+    --sl-w: 310%;
+    --sl-opacity: 0.5;
+    --sl-flip: scaleX(-1);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 190px,
+      #000 calc(100% - 230px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 190px,
+      #000 calc(100% - 230px),
+      transparent 100%
+    );
+  }
+
+  .page-surface > :global(.scene-layer--veil-faq) {
+    --sl-top: 1286px;
+
+    --sl-h: max(532px, calc(100% - 1286px - 1517px));
+
+    --sl-first: 532px;
+
+    --sl-tile-lap: 132px;
+    --sl-w: 320%;
+    --sl-opacity: 0.5;
+    --sl-flip: scaleX(-1);
+    -webkit-mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 190px,
+      #000 calc(100% - 220px),
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      180deg,
+      transparent 0,
+      #000 190px,
+      #000 calc(100% - 220px),
+      transparent 100%
+    );
+  }
+
+  @media (min-width: 860px) {
+    .page-surface > :global(.scene-layer--veil-hero) {
+      --sl-top: -320px;
+      --sl-h: 820px;
+      --sl-w: min(138%, max(100%, 1987px));
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.273) 0,
+        #000 320px,
+        #000 calc(100% - 260px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.273) 0,
+        #000 320px,
+        #000 calc(100% - 260px),
+        transparent 100%
+      );
+    }
+
+    .page-surface > :global(.scene-layer--main) {
+      --sl-top: -300px;
+      --sl-h: 1700px;
+      --sl-w: min(128%, max(100%, 1843px));
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.318) 0,
+        #000 300px,
+        #000 calc(100% - 420px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        rgba(0, 0, 0, 0.318) 0,
+        #000 300px,
+        #000 calc(100% - 420px),
+        transparent 100%
+      );
+    }
+
+    .block-programs > :global(.scene-layer--cards) {
+      --sl-top: -558px;
+
+      --sl-h: max(1450px, calc(100% + 1088px));
+      --sl-first: 1450px;
+      --sl-tail-start: calc(1450px - 42.4%);
+      --sl-tail-opacity: 0.56;
+      --sl-tile-lap: 205px;
+      --sl-w: min(134%, max(100%, 1930px));
+      --sl-opacity: 0.6;
+
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 558px,
+        #000 720px,
+        #000 calc(100% - 360px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 558px,
+        #000 720px,
+        #000 calc(100% - 360px),
+        transparent 100%
+      );
+    }
+
+    .page-surface > :global(.scene-layer--faq) {
+      --sl-top: 254px;
+      --sl-h: 1150px;
+      --sl-w: min(130%, max(100%, 1872px));
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 300px,
+        #000 calc(100% - 340px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 300px,
+        #000 calc(100% - 340px),
+        transparent 100%
+      );
+    }
+
+    .page-surface > :global(.scene-layer--veil-faq) {
+      --sl-top: 854px;
+      --sl-h: max(1150px, calc(100% - 854px - 1661px));
+      --sl-first: 1150px;
+      --sl-tile-lap: 205px;
+      --sl-w: min(134%, max(100%, 1930px));
+      -webkit-mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 300px,
+        #000 calc(100% - 340px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        180deg,
+        transparent 0,
+        #000 300px,
+        #000 calc(100% - 340px),
+        transparent 100%
+      );
+    }
+
+  }
+
+  .trust-faq {
+
+    position: relative;
+
+    padding-block: var(--gap-section) var(--gap-section);
+
+  }
+
+  .trust-faq-title {
+    margin: 0 0 var(--gap-head);
+    color: var(--text);
+  }
+
+  @media (min-width: 1050px) {
+    .trust-faq-title {
+      text-align: center;
+    }
+  }
+</style>

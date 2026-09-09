@@ -1,0 +1,792 @@
+---
+import type { Locale } from '../i18n/t';
+import { t } from '../i18n/t';
+import CaretDown from './icons/CaretDown.astro';
+
+import IconReward from './icons/IconReward.astro';
+import IconLink from './icons/IconLink.astro';
+import IconStatsBar from './icons/IconStatsBar.astro';
+import IconDeposit from './icons/IconDeposit.astro';
+import IconWithdraw from './icons/IconWithdraw.astro';
+import IconTraining from './icons/IconTraining.astro';
+import IconMessenger from './icons/IconMessenger.astro';
+import IconKit from './icons/IconKit.astro';
+import IconSupport from './icons/IconSupport.astro';
+import IconClock from './icons/IconClock.astro';
+import IconCurrency from './icons/IconCurrency.astro';
+import IconSignpost from './icons/IconSignpost.astro';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const programs = [
+  {
+    id: 'affiliate' as const,
+    name: t(locale, 'cards.affiliate.name'),
+    audience: t(locale, 'cards.affiliate.audience'),
+    receivesTitle: t(locale, 'dialog.affiliate.receives_title'),
+    receives: [
+
+      { title: t(locale, 'dialog.affiliate.receives.0.title'), Icon: IconReward },
+      { title: t(locale, 'dialog.affiliate.receives.1.title'), Icon: IconClock },
+      { title: t(locale, 'dialog.affiliate.receives.2.title'), Icon: IconWithdraw },
+      { title: t(locale, 'dialog.affiliate.receives.3.title'), Icon: IconLink },
+
+      { title: t(locale, 'dialog.affiliate.receives.4.title'), Icon: IconStatsBar },
+
+      { title: t(locale, 'dialog.affiliate.receives.5.title'), Icon: IconSupport },
+    ],
+    needsTitle: t(locale, 'dialog.affiliate.needs_title'),
+    needs: [
+      { lead: t(locale, 'dialog.affiliate.needs.0.lead'), tail: t(locale, 'dialog.affiliate.needs.0.tail') },
+      { lead: t(locale, 'dialog.affiliate.needs.1.lead'), tail: t(locale, 'dialog.affiliate.needs.1.tail') },
+      { lead: t(locale, 'dialog.affiliate.needs.2.lead'), tail: t(locale, 'dialog.affiliate.needs.2.tail') },
+      { lead: t(locale, 'dialog.affiliate.needs.3.lead'), tail: t(locale, 'dialog.affiliate.needs.3.tail') },
+      { lead: t(locale, 'dialog.affiliate.needs.4.lead'), tail: t(locale, 'dialog.affiliate.needs.4.tail') },
+    ],
+  },
+  {
+    id: 'bank' as const,
+    name: t(locale, 'cards.bank.name'),
+    audience: t(locale, 'cards.bank.audience'),
+    receivesTitle: t(locale, 'dialog.bank.receives_title'),
+    receives: [
+
+      { title: t(locale, 'dialog.bank.receives.0.title'), Icon: IconCurrency },
+      { title: t(locale, 'dialog.bank.receives.1.title'), Icon: IconSignpost },
+      { title: t(locale, 'dialog.bank.receives.2.title'), Icon: IconKit },
+
+      { title: t(locale, 'dialog.bank.receives.3.title'), Icon: IconStatsBar },
+
+      { title: t(locale, 'dialog.bank.receives.4.title'), Icon: IconTraining },
+      { title: t(locale, 'dialog.bank.receives.5.title'), Icon: IconSupport },
+    ],
+    needsTitle: t(locale, 'dialog.bank.needs_title'),
+    needs: [
+      { lead: t(locale, 'dialog.bank.needs.0.lead'), tail: t(locale, 'dialog.bank.needs.0.tail') },
+      { lead: t(locale, 'dialog.bank.needs.1.lead'), tail: t(locale, 'dialog.bank.needs.1.tail') },
+      { lead: t(locale, 'dialog.bank.needs.2.lead'), tail: t(locale, 'dialog.bank.needs.2.tail') },
+      { lead: t(locale, 'dialog.bank.needs.3.lead'), tail: t(locale, 'dialog.bank.needs.3.tail') },
+      { lead: t(locale, 'dialog.bank.needs.4.lead'), tail: t(locale, 'dialog.bank.needs.4.tail') },
+    ],
+  },
+  {
+    id: 'teamcash' as const,
+    name: t(locale, 'cards.teamcash.name'),
+    audience: t(locale, 'cards.teamcash.audience'),
+    receivesTitle: t(locale, 'dialog.teamcash.receives_title'),
+    receives: [
+      { title: t(locale, 'dialog.teamcash.receives.0.title'), Icon: IconCurrency },
+
+      { title: t(locale, 'dialog.teamcash.receives.1.title'), Icon: IconDeposit },
+      { title: t(locale, 'dialog.teamcash.receives.2.title'), Icon: IconMessenger },
+
+      { title: t(locale, 'dialog.teamcash.receives.3.title'), Icon: IconStatsBar },
+      { title: t(locale, 'dialog.teamcash.receives.4.title'), Icon: IconTraining },
+      { title: t(locale, 'dialog.teamcash.receives.5.title'), Icon: IconSupport },
+    ],
+    needsTitle: t(locale, 'dialog.teamcash.needs_title'),
+    needs: [
+      { lead: t(locale, 'dialog.teamcash.needs.0.lead'), tail: t(locale, 'dialog.teamcash.needs.0.tail') },
+      { lead: t(locale, 'dialog.teamcash.needs.1.lead'), tail: t(locale, 'dialog.teamcash.needs.1.tail') },
+      { lead: t(locale, 'dialog.teamcash.needs.2.lead'), tail: t(locale, 'dialog.teamcash.needs.2.tail') },
+      { lead: t(locale, 'dialog.teamcash.needs.3.lead'), tail: t(locale, 'dialog.teamcash.needs.3.tail') },
+      { lead: t(locale, 'dialog.teamcash.needs.4.lead'), tail: t(locale, 'dialog.teamcash.needs.4.tail') },
+    ],
+  },
+];
+---
+
+<div class="direction-cards">
+  <div class="direction-head">
+    <h2 id="direction-cards-title" class="type-h2">{t(locale, 'cards.section_title')}</h2>
+  </div>
+
+  <div class="direction-accordion">
+    {
+      programs.map((program) => (
+        <details
+          class="direction-card reveal-item"
+          id={`direction-${program.id}`}
+          data-track-direction={program.id}
+        >
+
+          <summary class="direction-summary">
+
+            <span class="direction-summary-copy">
+              <span class="direction-name type-h2">{program.name}</span>
+              <span class="direction-audience type-body">{program.audience}</span>
+            </span>
+            <span class="direction-caret" aria-hidden="true">
+              <CaretDown />
+            </span>
+          </summary>
+
+          <div class="direction-body">
+            <div class="direction-body-inner">
+              <section class="direction-section">
+                <h3 class="direction-section-title type-body-bold">{program.receivesTitle}</h3>
+
+                <ul class="direction-gains type-body">
+                  {program.receives.map((item) => (
+                    <li class="direction-gain">
+                      <span class="direction-gain-mark" aria-hidden="true">
+                        <item.Icon />
+                      </span>
+                      <span class="direction-gain-label type-label">{item.title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+
+              <section class="direction-section">
+                <h3 class="direction-section-title type-body-bold">{program.needsTitle}</h3>
+
+                <ol class="direction-steps type-body">
+
+                  {program.needs.map((item) => (
+                    <li class="direction-step">
+                      <span class="direction-step-text">
+                        <span class="direction-step-lead">{item.lead}</span> <span class="direction-step-tail">{item.tail}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+
+            </div>
+          </div>
+        </details>
+      ))
+    }
+  </div>
+</div>
+
+<style>
+  .direction-cards {
+    position: relative;
+    padding-top: var(--gap-section);
+
+  }
+
+  .direction-head {
+    max-width: 46rem;
+    margin-bottom: var(--gap-head);
+
+    margin-inline: auto;
+    text-align: center;
+  }
+
+  .direction-head h2 {
+    margin: 0;
+    color: var(--text);
+
+    max-width: 12ch;
+    margin-inline: auto;
+  }
+
+  .direction-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  @media (min-width: 1050px) {
+
+    .direction-head h2 {
+
+      max-width: none;
+    }
+
+    .direction-accordion {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-lg);
+      align-items: start;
+    }
+  }
+
+  .direction-card {
+    position: relative;
+
+    isolation: isolate;
+    overflow: hidden;
+
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+
+    background:
+      var(--glass-gloss-panel),
+      linear-gradient(var(--glass-tint), var(--glass-tint)),
+      var(--glass-fill);
+
+    -webkit-backdrop-filter: var(--glass-saturate);
+    backdrop-filter: var(--glass-saturate);
+
+    box-shadow:
+      var(--glass-rim-hair),
+      var(--glass-rim-top),
+      inset 0 0 0 200px rgba(255, 255, 255, 0);
+
+    transition:
+      border-color var(--motion-fast) var(--ease-charge),
+      box-shadow var(--motion-fast) var(--ease-charge);
+  }
+
+  .direction-card::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+
+    background: var(--glass-gloss-inner-panel);
+
+  }
+
+  .direction-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    padding: 1px;
+    border-radius: inherit;
+    pointer-events: none;
+
+    background: var(--glass-edge);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    transition: opacity var(--motion-fast) var(--ease-charge);
+  }
+
+  .direction-card:has(> .direction-summary:focus-visible) {
+    outline: 2px solid var(--gold-light);
+    outline-offset: -2px;
+  }
+
+  @media (forced-colors: active) {
+    .direction-card:has(> .direction-summary:focus-visible) {
+      outline: 2px solid CanvasText;
+      outline-offset: -2px;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .direction-card:hover {
+      box-shadow:
+        var(--glass-rim-hair),
+        var(--glass-rim-top),
+        inset 0 0 0 200px rgba(255, 255, 255, 0.025);
+    }
+
+    .direction-summary:hover {
+      cursor: pointer;
+    }
+  }
+
+  .direction-card:has(> .direction-summary:active) {
+
+    box-shadow:
+      var(--glass-rim-hair),
+      var(--glass-rim-top),
+      inset 0 0 0 200px rgba(255, 255, 255, 0.05);
+  }
+
+  .direction-summary-copy,
+  .direction-body {
+    position: relative;
+    z-index: 1;
+  }
+
+  .direction-summary {
+    display: block;
+    min-height: 56px;
+    padding: var(--space-lg) var(--space-md) calc(var(--space-md) + 26px);
+    text-align: center;
+    cursor: pointer;
+    list-style: none;
+
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    transition: padding-bottom var(--motion-reveal) var(--ease-reveal);
+  }
+
+  details[open] .direction-summary {
+    padding-bottom: var(--space-md);
+
+    transition: padding-bottom var(--motion-reveal) var(--ease-reveal);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .direction-summary,
+    details[open] .direction-summary {
+      transition: none;
+    }
+  }
+
+  .direction-summary::-webkit-details-marker {
+    display: none;
+  }
+  .direction-summary::marker {
+    content: '';
+  }
+
+  .direction-summary-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 52ch;
+    margin-inline: auto;
+  }
+
+  .direction-name {
+    color: var(--gold);
+  }
+
+  @media (max-width: 859px) {
+    .direction-name {
+      font-size: clamp(40px, calc(19.4px + 5.7vw), 44px);
+    }
+  }
+
+  .direction-audience {
+    align-self: center;
+    max-width: 100%;
+    text-wrap: balance;
+    color: var(--text);
+  }
+
+  .direction-caret {
+    position: absolute;
+    bottom: 14px;
+    left: 50%;
+    z-index: 2;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+    transform: translateX(-50%);
+
+    transition:
+      transform var(--motion-reveal) var(--ease-reveal),
+      color var(--motion-reveal) var(--ease-reveal);
+  }
+
+  .direction-caret::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background-color: transparent;
+    transition:
+      background-color var(--motion-fast) var(--ease-charge),
+      border-color var(--motion-fast) var(--ease-charge);
+
+  }
+
+  .direction-caret :global(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  details[open] .direction-caret {
+    transform: translateX(-50%) rotate(180deg);
+    color: var(--gold);
+  }
+
+  details[open] .direction-caret:active {
+    transform: translateX(-50%) rotate(180deg) scale(var(--press-scale-strong));
+    transition-duration: var(--motion-press);
+  }
+
+  .direction-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows var(--motion-reveal) var(--ease-reveal);
+  }
+
+  details[open] .direction-body {
+    grid-template-rows: 1fr;
+  }
+
+  .direction-body-inner {
+    overflow: hidden;
+    padding: 0 var(--space-md);
+    text-align: left;
+
+    opacity: 0;
+
+    transition:
+      opacity var(--motion-base) var(--ease-reveal),
+      padding-bottom var(--motion-reveal) var(--ease-reveal);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .direction-body-inner,
+    details[open] .direction-body-inner {
+      transition: none;
+    }
+  }
+
+  details[open] > .direction-summary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    cursor: default;
+  }
+
+  details[open] > .direction-body {
+    pointer-events: none;
+  }
+
+  details[open] > .direction-body .direction-section-title,
+  details[open] > .direction-body .direction-gains,
+  details[open] > .direction-body .direction-steps,
+  details[open] > .direction-body :is(a, button, input, select, textarea, [tabindex]) {
+    pointer-events: auto;
+  }
+
+  @supports selector(::details-content) and (interpolate-size: allow-keywords) {
+
+    .direction-card::details-content {
+      interpolate-size: allow-keywords;
+      block-size: 0;
+      overflow: hidden;
+      content-visibility: visible;
+
+      transition: block-size var(--motion-reveal) var(--ease-reveal);
+    }
+
+    .direction-card[open]::details-content {
+      block-size: auto;
+      content-visibility: visible;
+      transition: block-size var(--motion-reveal) var(--ease-reveal);
+    }
+
+    .direction-body {
+      grid-template-rows: 1fr;
+      visibility: hidden;
+      transition: visibility 0s var(--motion-reveal);
+    }
+
+    details[open] .direction-body {
+      visibility: visible;
+      transition: none;
+    }
+
+    @starting-style {
+      details[open] .direction-body-inner {
+        opacity: 0;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .direction-card::details-content,
+      .direction-card[open]::details-content {
+        transition: none;
+      }
+
+      .direction-body,
+      details[open] .direction-body {
+        transition: none;
+      }
+    }
+  }
+
+  @supports selector(::details-content) and (not (interpolate-size: allow-keywords)) {
+    .direction-card::details-content,
+    .direction-card[open]::details-content {
+      content-visibility: visible;
+    }
+
+    .direction-body {
+      visibility: hidden;
+      transition:
+        grid-template-rows var(--motion-reveal) var(--ease-reveal),
+        visibility 0s var(--motion-reveal);
+    }
+
+    details[open] .direction-body {
+      visibility: visible;
+      transition: grid-template-rows var(--motion-reveal) var(--ease-reveal);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .direction-body,
+      details[open] .direction-body {
+        transition: none;
+      }
+    }
+  }
+
+  details[open] .direction-body-inner {
+    padding-bottom: calc(var(--space-md) + 30px);
+    opacity: 1;
+
+    transition: opacity var(--motion-base) var(--ease-reveal) var(--motion-press);
+  }
+
+  .direction-section {
+    max-width: 56ch;
+    margin-inline: auto;
+    padding-block: var(--space-lg) 0;
+  }
+
+  .direction-section-title {
+    margin: 0 0 var(--space-md);
+    color: var(--text);
+  }
+
+  .direction-gains {
+    display: grid;
+
+    box-shadow:
+      inset 0 0 0 1px var(--glass-inset-hair),
+      inset 0 1px 0 var(--glass-inset-rim);
+
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--glass-inset);
+    list-style: none;
+    color: var(--text);
+  }
+
+  .direction-gain {
+    display: grid;
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+    padding: 14px 10px;
+    text-align: center;
+  }
+
+  @media (min-width: 390px) {
+    .direction-gain {
+      grid-template-columns: 24px 1fr;
+      justify-items: stretch;
+      align-items: center;
+      gap: 8px;
+
+      padding: 12px 6px;
+      text-align: left;
+    }
+
+    .direction-gain-mark,
+    .direction-gain-mark :global(svg) {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  @media (min-width: 430px) {
+    .direction-gain {
+      padding: 12px 10px;
+    }
+  }
+
+  @media (min-width: 640px) {
+    .direction-gain {
+      grid-template-columns: 26px 1fr;
+      gap: 12px;
+      padding: 12px var(--space-md);
+    }
+
+    .direction-gain-mark,
+    .direction-gain-mark :global(svg) {
+      width: 26px;
+      height: 26px;
+    }
+  }
+
+  .direction-gain:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .direction-gain:nth-child(even) {
+    border-left: 1px solid var(--line);
+  }
+
+  .direction-gain-mark {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: var(--text);
+  }
+
+  .direction-gain-mark :global(svg) {
+    width: 26px;
+    height: 26px;
+  }
+
+  .direction-gain-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .direction-steps {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    background: var(--glass-inset);
+
+    box-shadow:
+      inset 0 0 0 1px var(--glass-inset-hair),
+      inset 0 1px 0 var(--glass-inset-rim);
+    list-style: none;
+    counter-reset: direction-step;
+
+    color: var(--text);
+  }
+
+  .direction-step {
+    display: grid;
+    grid-template-columns: 22px 1fr;
+    align-items: start;
+    gap: 8px;
+    max-width: 68ch;
+    counter-increment: direction-step;
+  }
+
+  .direction-step-lead {
+    color: var(--text);
+    font-weight: var(--weight-medium);
+  }
+
+  .direction-step-tail {
+    color: var(--muted);
+  }
+
+  .direction-step::before {
+    content: counter(direction-step) '.';
+    justify-self: end;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: var(--weight-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.55;
+  }
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .direction-card {
+      background: var(--glass-fill-dense);
+    }
+
+    .direction-card::before {
+      opacity: 0;
+    }
+
+    .direction-card::after {
+      background: var(--glass-edge-dense);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .direction-card {
+      background: var(--glass-fill-opaque);
+
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    .direction-card::before,
+    .direction-card::after {
+      opacity: 0;
+    }
+
+  }
+
+  @media (min-width: 900px) {
+    .direction-summary {
+      padding: var(--space-lg) var(--space-lg) calc(var(--space-lg) + 26px);
+    }
+
+    details[open] .direction-summary {
+      padding-bottom: var(--space-lg);
+    }
+
+    .direction-body-inner {
+      padding-inline: var(--space-lg);
+    }
+  }
+
+  @media (min-width: 1050px) {
+    .direction-cards {
+
+      --direction-head-h: 200px;
+    }
+
+    .direction-name {
+      display: block;
+      min-block-size: 1lh;
+    }
+
+    .direction-summary {
+      padding-top: var(--space-md);
+      padding-bottom: calc(var(--space-md) + 24px);
+    }
+
+    .direction-audience {
+
+      min-block-size: 2lh;
+    }
+
+    .direction-gains {
+
+      min-block-size: 8.6lh;
+    }
+
+    .direction-steps {
+
+      min-block-size: 16.1lh;
+    }
+  }
+
+  @media (min-width: 1050px) and (max-width: 1081px) {
+    .direction-name {
+
+      min-block-size: 2lh;
+    }
+  }
+
+  @media (min-width: 1050px) and (max-width: 1279px) {
+    .direction-section-title {
+
+      min-block-size: 2lh;
+    }
+
+    .direction-gains {
+
+      min-block-size: 11.2lh;
+    }
+
+    .direction-steps {
+
+      min-block-size: 22.1lh;
+    }
+  }
+</style>

@@ -1,0 +1,349 @@
+---
+import { t, type TranslationKey } from '../i18n/t';
+import type { Locale } from '../i18n/routes';
+import { config } from '../config';
+import { buildContactHref } from '../lib/start-link';
+import TelegramIcon from './icons/TelegramIcon.astro';
+import MessengerIcon from './icons/MessengerIcon.astro';
+
+interface Props {
+  locale: Locale;
+
+  variant?: 'hero' | 'compact';
+  class?: string;
+
+  program?: 'affiliate' | 'bank' | 'teamcash';
+
+  trackPlacement?: 'hero' | 'compact' | 'steps';
+
+  telegramLabelKey?: TranslationKey;
+
+  tone?: 'channel' | 'neutral';
+}
+
+const {
+  locale,
+  variant = 'hero',
+  class: className = '',
+  program,
+  trackPlacement,
+  telegramLabelKey = 'contact.telegram',
+  tone = 'channel',
+} = Astro.props;
+
+const placement = trackPlacement ?? variant;
+
+const messengerLabel =
+  variant === 'hero'
+    ? t(locale, 'contact.messenger_short')
+    : t(locale, 'contact.messenger');
+
+const telegramHref = buildContactHref({
+  botUrl: config.tgBotUrl,
+  fallbackUrl: config.tgContactUrl,
+  direction: program ?? 'none',
+  locale,
+});
+
+const showChannelIcon = variant !== 'hero';
+
+---
+
+<div
+  class:list={[
+    'contact-actions',
+    `contact-actions--${variant}`,
+    tone === 'neutral' && 'contact-actions--neutral',
+    className,
+  ]}
+>
+  <a
+    class="contact-btn contact-btn--telegram type-body-bold"
+    data-program={program}
+    data-track="messenger_click"
+    data-track-channel="telegram"
+    data-track-placement={placement}
+    href={telegramHref}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    {showChannelIcon && <span class="contact-btn__icon" aria-hidden="true"><TelegramIcon /></span>}
+    <span>{t(locale, telegramLabelKey)}</span>
+  </a>
+
+  <a
+    class="contact-btn contact-btn--messenger type-body-bold"
+    data-program={program}
+    data-track="messenger_click"
+    data-track-channel="messenger"
+    data-track-placement={placement}
+    href={config.messengerUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    {showChannelIcon && <span class="contact-btn__icon" aria-hidden="true"><MessengerIcon /></span>}
+    <span>{messengerLabel}</span>
+  </a>
+</div>
+
+<style>
+  .contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .contact-btn {
+    position: relative;
+
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 52px;
+    padding-inline: 22px;
+    border: none;
+    border-radius: var(--radius-control);
+
+    background-image: var(--glass-gloss);
+
+    box-shadow: var(--glass-rim-hair), var(--glass-rim-top);
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+
+    transition:
+      transform var(--motion-base) var(--ease-spring),
+      background-color var(--motion-fast) var(--ease-charge);
+  }
+
+  .contact-btn::before,
+  .contact-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .contact-btn::before {
+    z-index: -1;
+    background: var(--glass-gloss-inner);
+  }
+
+  .contact-btn::after {
+    z-index: 2;
+    padding: 1px;
+    background: var(--glass-edge);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  .contact-btn__icon {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .contact-btn__icon :global(svg) {
+    width: 18px;
+    height: 18px;
+  }
+
+  .contact-btn--telegram {
+    background-color: var(--btn-telegram-bg);
+    color: var(--btn-telegram-text);
+  }
+
+  .contact-btn--messenger {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+  }
+
+  @media (min-width: 560px) {
+    .contact-actions--hero .contact-btn {
+      min-width: 220px;
+    }
+  }
+
+  @media (min-width: 1050px) and (max-width: 1059px) {
+    .contact-actions--hero .contact-btn {
+      min-width: 210px;
+    }
+  }
+
+  .contact-actions--hero .contact-btn--messenger {
+    -webkit-backdrop-filter: var(--glass-saturate);
+    backdrop-filter: var(--glass-saturate);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .contact-btn--telegram:hover {
+      background-color: var(--btn-telegram-bg-hover);
+    }
+
+    .contact-btn--messenger:hover {
+      background-color: var(--btn-secondary-bg-hover);
+    }
+  }
+
+  .contact-btn:active {
+    transform: scale(var(--press-scale-strong));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+  }
+
+  .contact-btn--telegram:active {
+    background-color: var(--btn-telegram-bg-active);
+  }
+
+  .contact-btn--messenger:active {
+    background-color: var(--btn-secondary-bg-active);
+  }
+
+  .contact-actions--compact .contact-btn {
+    min-height: 44px;
+    padding-inline: 16px;
+    gap: 8px;
+  }
+
+  .contact-actions--compact {
+    gap: var(--space-sm);
+  }
+
+  @media (max-width: 559px) {
+    .contact-actions--hero {
+
+      width: 100%;
+      flex-wrap: nowrap;
+      gap: var(--space-sm);
+    }
+
+    .contact-actions--hero .contact-btn {
+      flex: 1 1 0;
+      min-width: 0;
+      padding-inline: 12px;
+    }
+  }
+
+  .contact-actions--hero .contact-btn {
+    border-radius: var(--radius-pill);
+  }
+
+  @media (max-width: 859px) {
+    .contact-actions--hero .contact-btn {
+      min-height: 44px;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .contact-actions .contact-btn--telegram,
+    .contact-actions .contact-btn--telegram:active {
+      background-color: var(--btn-telegram-bg-opaque);
+    }
+
+    .contact-actions .contact-btn--messenger,
+    .contact-actions .contact-btn--messenger:active {
+      background-color: var(--panel-strong);
+    }
+
+    .contact-actions--hero .contact-btn--messenger {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    .contact-actions .contact-btn {
+      background-image: none;
+      box-shadow: none;
+    }
+
+    .contact-actions .contact-btn::before,
+    .contact-actions .contact-btn::after {
+      opacity: 0;
+    }
+
+    .contact-actions .contact-btn--messenger {
+      border: var(--btn-secondary-border);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) and (hover: hover) and (pointer: fine) {
+    .contact-actions .contact-btn--telegram:hover {
+      background-color: var(--btn-telegram-bg-opaque);
+    }
+
+    .contact-actions .contact-btn--messenger:hover {
+      background-color: var(--panel-strong);
+    }
+  }
+
+  .contact-actions.contact-actions--neutral .contact-btn--telegram {
+    background-color: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+
+  }
+
+  .contact-actions.contact-actions--neutral .contact-btn {
+    background-color: var(--glass-fill-light);
+    background-image: var(--glass-gloss);
+    -webkit-backdrop-filter: var(--glass-blur-light);
+    backdrop-filter: var(--glass-blur-light);
+
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .contact-actions.contact-actions--neutral .contact-btn,
+    .contact-actions.contact-actions--neutral .contact-btn:active {
+      background-color: var(--panel-strong);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) and (hover: hover) and (pointer: fine) {
+    .contact-actions.contact-actions--neutral .contact-btn:hover {
+      background-color: var(--panel-strong);
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .contact-actions.contact-actions--neutral .contact-btn:hover {
+      background-color: var(--btn-secondary-bg-hover);
+    }
+  }
+
+  .contact-actions.contact-actions--neutral .contact-btn:active {
+    background-color: var(--btn-secondary-bg-active);
+  }
+
+  @media (prefers-reduced-transparency: reduce) {
+    .contact-actions.contact-actions--neutral .contact-btn--telegram,
+    .contact-actions.contact-actions--neutral .contact-btn--telegram:active {
+      background-color: var(--panel-strong);
+    }
+
+    .contact-actions.contact-actions--neutral .contact-btn--telegram {
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+
+      border: var(--btn-secondary-border);
+    }
+  }
+
+  @media (prefers-reduced-transparency: reduce) and (hover: hover) and (pointer: fine) {
+    .contact-actions.contact-actions--neutral .contact-btn--telegram:hover {
+      background-color: var(--panel-strong);
+    }
+  }
+</style>

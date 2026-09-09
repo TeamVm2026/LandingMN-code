@@ -1,0 +1,10 @@
+{
+  "reply.greeting": "Hello! You came from the MELBET partner programme landing page for Mongolia.",
+  "reply.handoff": "Your request is already with a manager - message them right now, they are waiting.",
+  "reply.manager_button": "Message the manager",
+  "reply.direction_line": "Direction: {direction}",
+  "reply.repeat_note": "You are already with us - the manager is below.",
+  "profile.short_description": "MELBET Mongolia partner programme. You get the manager contact right away.",
+  "profile.description": "Official bot of the MELBET partner programme in Mongolia. Three directions: Affiliate, Bank Transfer, Team Cash. Press START and the manager contact arrives immediately.",
+  "profile.command_start": "Start - get the manager contact"
+}

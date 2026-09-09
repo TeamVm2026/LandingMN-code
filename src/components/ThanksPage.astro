@@ -1,0 +1,178 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Header from './Header.astro';
+import Footer from './Footer.astro';
+import ResponseTime from './ResponseTime.astro';
+import { t, type Locale } from '../i18n/t';
+import { PAGE_ROUTES } from '../i18n/routes';
+import { config } from '../config';
+import { buildContactHref } from '../lib/start-link';
+
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+
+const ctaHref = buildContactHref({
+  botUrl: config.tgBotUrl,
+  fallbackUrl: config.tgContactUrl,
+  direction: 'none',
+  locale,
+});
+---
+
+<BaseLayout
+  title={t(locale, 'pages.thanks_h1')}
+  description={t(locale, 'pages.thanks_body')}
+  pageId="thanks"
+>
+  <Header locale={locale} pageId="thanks" />
+  <main class="thanks-main">
+    <h1 class="type-display thanks-title">{t(locale, 'pages.thanks_h1')}</h1>
+    <p class="type-body thanks-body">{t(locale, 'pages.thanks_body')}</p>
+
+    <ResponseTime
+      locale={locale}
+      messageKey="pages.thanks_reply"
+      hoursKey="pages.thanks_hours"
+    />
+    <a class="thanks-cta type-body-bold" href={ctaHref}>
+      {t(locale, 'pages.thanks_cta')}
+    </a>
+    <a class="thanks-home type-body" href={PAGE_ROUTES.home[locale]}>
+      {t(locale, 'pages.thanks_home')}
+    </a>
+  </main>
+  <Footer locale={locale} />
+</BaseLayout>
+
+<style>
+  .thanks-main {
+    width: min(calc(100% - 48px), var(--page));
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: var(--space-md);
+    min-height: calc(100svh - 74px);
+
+    padding-block: var(--space-lg);
+  }
+
+  @media (min-width: 860px) {
+    .thanks-main {
+      min-height: calc(100svh - 82px);
+    }
+  }
+
+  .thanks-title {
+    margin: 0;
+    color: var(--text);
+  }
+
+  .thanks-body {
+    margin: 0;
+    max-width: 52ch;
+    color: var(--muted);
+  }
+
+  .thanks-main :global(.hero-status) {
+    text-align: start;
+  }
+
+  .thanks-cta {
+    position: relative;
+    isolation: isolate;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 54px;
+
+    margin-top: var(--space-sm);
+    padding-inline: 26px;
+    border: none;
+    border-radius: var(--radius-pill);
+    background-color: var(--btn-primary-bg);
+    background-image: var(--glass-gloss);
+    box-shadow: var(--glass-rim-hair), var(--glass-rim-top);
+    color: var(--btn-primary-text);
+    text-decoration: none;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition:
+      transform var(--motion-base) var(--ease-spring),
+      background-color var(--motion-fast) var(--ease-charge);
+  }
+
+  .thanks-cta::before,
+  .thanks-cta::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  .thanks-cta::before {
+    z-index: -1;
+    background: var(--glass-gloss-inner);
+  }
+
+  .thanks-cta::after {
+    z-index: 2;
+    padding: 1px;
+    background: var(--glass-edge);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .thanks-cta:hover {
+      background-color: var(--btn-primary-bg-hover);
+    }
+  }
+
+  .thanks-cta:active {
+    transform: scale(var(--press-scale-strong));
+    transition-duration: var(--motion-press);
+    transition-timing-function: var(--ease-charge);
+    background-color: var(--btn-primary-bg-active);
+  }
+
+  .thanks-home {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding-inline: 2px;
+    color: var(--muted);
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, var(--muted) 45%, transparent);
+    text-underline-offset: 4px;
+    text-decoration-thickness: 1px;
+    transition:
+      color var(--motion-fast) var(--ease-charge),
+      text-decoration-color var(--motion-fast) var(--ease-charge);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .thanks-home:hover {
+      color: var(--text);
+      text-decoration-color: var(--gold);
+    }
+  }
+
+  .thanks-home:active {
+    color: var(--text);
+    text-decoration-color: var(--gold);
+  }
+</style>

@@ -1,0 +1,200 @@
+[
+  {
+    "note": "полная метка со всеми пятью полями — худший реальный случай, 50 символов из 64",
+    "payload": {
+      "source": "fb",
+      "direction": "affiliate",
+      "locale": "mn",
+      "campaign": "aug-promo",
+      "click": "7f3a91b2e0"
+    },
+    "encoded": "1_fb_a_m_aug-promo_7f3a91b2e0"
+  },
+  {
+    "note": "хвостовые пустые поля опускаются: ни кампании, ни клика",
+    "payload": {
+      "source": "fb",
+      "direction": "affiliate",
+      "locale": "mn",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_fb_a_m"
+  },
+  {
+    "note": "пустое поле в СЕРЕДИНЕ не опускается: источник неизвестен, направление не выбрано",
+    "payload": {
+      "source": "",
+      "direction": "none",
+      "locale": "mn",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1__x_m"
+  },
+  {
+    "note": "направление affiliate -> буква a",
+    "payload": {
+      "source": "tg",
+      "direction": "affiliate",
+      "locale": "ru",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_tg_a_r"
+  },
+  {
+    "note": "направление bank -> буква b",
+    "payload": {
+      "source": "tg",
+      "direction": "bank",
+      "locale": "ru",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_tg_b_r"
+  },
+  {
+    "note": "направление teamcash -> буква t",
+    "payload": {
+      "source": "tg",
+      "direction": "teamcash",
+      "locale": "ru",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_tg_t_r"
+  },
+  {
+    "note": "направление не выбрано -> буква x",
+    "payload": {
+      "source": "tg",
+      "direction": "none",
+      "locale": "ru",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_tg_x_r"
+  },
+  {
+    "note": "локаль mn -> буква m",
+    "payload": {
+      "source": "qr",
+      "direction": "bank",
+      "locale": "mn",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_qr_b_m"
+  },
+  {
+    "note": "локаль ru -> буква r",
+    "payload": {
+      "source": "qr",
+      "direction": "bank",
+      "locale": "ru",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_qr_b_r"
+  },
+  {
+    "note": "локаль en -> буква e",
+    "payload": {
+      "source": "qr",
+      "direction": "bank",
+      "locale": "en",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_qr_b_e"
+  },
+  {
+    "note": "предельный источник: ровно 12 символов",
+    "payload": {
+      "source": "tiktok-ads-x",
+      "direction": "affiliate",
+      "locale": "en",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_tiktok-ads-x_a_e"
+  },
+  {
+    "note": "предельная кампания: ровно 20 символов",
+    "payload": {
+      "source": "fb",
+      "direction": "bank",
+      "locale": "mn",
+      "campaign": "summer-promo-2026-mn",
+      "click": ""
+    },
+    "encoded": "1_fb_b_m_summer-promo-2026-mn"
+  },
+  {
+    "note": "предельный хвост клика: 10 символов при пустой кампании — двойной разделитель в середине",
+    "payload": {
+      "source": "fb",
+      "direction": "bank",
+      "locale": "mn",
+      "campaign": "",
+      "click": "0a1b2c3d4e"
+    },
+    "encoded": "1_fb_b_m__0a1b2c3d4e"
+  },
+  {
+    "note": "самый длинный возможный payload: все поля на пределе — 50 символов, запас 14",
+    "payload": {
+      "source": "tiktok-ads-x",
+      "direction": "teamcash",
+      "locale": "en",
+      "campaign": "summer-promo-2026-mn",
+      "click": "0a1b2c3d4e"
+    },
+    "encoded": "1_tiktok-ads-x_t_e_summer-promo-2026-mn_0a1b2c3d4e"
+  },
+  {
+    "note": "только хвост клика: два пустых поля подряд в середине",
+    "payload": {
+      "source": "",
+      "direction": "none",
+      "locale": "en",
+      "campaign": "",
+      "click": "9z8y7x6w5v"
+    },
+    "encoded": "1__x_e__9z8y7x6w5v"
+  },
+  {
+    "note": "кампания без клика",
+    "payload": {
+      "source": "insta",
+      "direction": "affiliate",
+      "locale": "ru",
+      "campaign": "q3",
+      "click": ""
+    },
+    "encoded": "1_insta_a_r_q3"
+  },
+  {
+    "note": "односимвольный источник",
+    "payload": {
+      "source": "f",
+      "direction": "teamcash",
+      "locale": "mn",
+      "campaign": "",
+      "click": ""
+    },
+    "encoded": "1_f_t_m"
+  },
+  {
+    "note": "цифры во всех полях — алфавит [a-z0-9-] целиком",
+    "payload": {
+      "source": "utm2",
+      "direction": "bank",
+      "locale": "en",
+      "campaign": "2026-08",
+      "click": "1234567890"
+    },
+    "encoded": "1_utm2_b_e_2026-08_1234567890"
+  }
+]
