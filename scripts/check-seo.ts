@@ -49,17 +49,38 @@ function hasJsonLdType(html: string, type: string): boolean {
   return scriptBlocks.some((block) => block.includes(`"@type":"${type}"`) || block.includes(`"@type": "${type}"`));
 }
 
+const TITLE_MIN = 25;
+const TITLE_MAX = 60;
+const DESCRIPTION_MIN = 70;
+const DESCRIPTION_MAX = 160;
+
 function checkLandingPage(html: string, page: PageSpec): { errors: string[]; title?: string; description?: string } {
   const errors: string[] = [];
 
   const title = extractTag(html, /<title>([^<]*)<\/title>/);
   if (!title || title.trim().length === 0) {
     errors.push('missing or empty <title>');
+  } else if (title.trim().length > TITLE_MAX) {
+    errors.push(
+      `<title> длиной ${String(title.trim().length)} зн. — длиннее ${String(TITLE_MAX)}, выдача обрежет хвост: "${title}"`,
+    );
+  } else if (title.trim().length < TITLE_MIN) {
+    errors.push(
+      `<title> длиной ${String(title.trim().length)} зн. — короче ${String(TITLE_MIN)}, в нём не помещается ни предмет, ни гео: "${title}"`,
+    );
   }
 
   const description = extractTag(html, /<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/);
   if (!description || description.trim().length === 0) {
     errors.push('missing or empty <meta name="description">');
+  } else if (description.trim().length > DESCRIPTION_MAX) {
+    errors.push(
+      `<meta name="description"> длиной ${String(description.trim().length)} зн. — длиннее ${String(DESCRIPTION_MAX)}, выдача обрежет хвост`,
+    );
+  } else if (description.trim().length < DESCRIPTION_MIN) {
+    errors.push(
+      `<meta name="description"> длиной ${String(description.trim().length)} зн. — короче ${String(DESCRIPTION_MIN)}, описание не успевает сказать, о чём страница`,
+    );
   }
 
   const ogImage = extractTag(html, /<meta[^>]*property="og:image"[^>]*content="([^"]*)"[^>]*>/);

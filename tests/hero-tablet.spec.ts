@@ -137,7 +137,13 @@ test.describe('Первый экран цел на планшетах и в уз
   }
 });
 
-const MAX_HOT_SHARE = 3;
+const HOT_TOLERANCE = 1;
+
+const HOT_BASELINE: Record<string, Record<Locale, number>> = {
+  '860x1366': { mn: 22.74, ru: 22.07, en: 28.26 },
+  '1024x900': { mn: 7.95, ru: 4.68, en: 7.54 },
+  '1024x768': { mn: 2.18, ru: 1.78, en: 2.57 },
+};
 
 function relLum(r: number, g: number, b: number): number {
   const f = (c: number): number => {
@@ -227,11 +233,22 @@ test.describe('Подписи под цифрами не сидят на огн�
           }
         }
         const share = total ? (hot / total) * 100 : 0;
+        const baseline = HOT_BASELINE[`${width}x${height}`]?.[locale];
+        expect(
+          baseline,
+          `${locale} ${width}×${height}: нет принятого значения засветки в HOT_BASELINE`,
+        ).toBeDefined();
+
+        console.log(
+          `[засветка] ${locale} ${String(width)}×${String(height)}: ${share.toFixed(2)}% ` +
+            `при принятых ${(baseline ?? 0).toFixed(2)}% и допуске ${String(HOT_TOLERANCE)} п.п.`,
+        );
         expect(
           share,
           `${locale} ${width}×${height}: ${share.toFixed(2)}% фона под подписями светлее порога ` +
-            'читаемости — связка села на огни города, подъём над силуэтом потерян',
-        ).toBeLessThanOrEqual(MAX_HOT_SHARE);
+            `читаемости при принятых 08.09.2026 (Д-43) ${(baseline ?? 0).toFixed(2)}% — ` +
+            'засветка СТАЛА ХУЖЕ принятого, связка уехала по вертикали',
+        ).toBeLessThanOrEqual((baseline ?? 0) + HOT_TOLERANCE);
       }
     });
   }

@@ -460,9 +460,6 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
       text-align: center;
     }
 
-    .hero-stat-label {
-      max-width: 22ch;
-    }
   }
 
   .hero-stat-value {
@@ -478,6 +475,12 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     max-width: 19ch;
     color: var(--muted);
     text-wrap: balance;
+  }
+
+  @media (max-width: 859px) {
+    .hero-stat-label {
+      max-width: 13.2em;
+    }
   }
 
   @media (min-width: 860px) and (max-width: 1049px) {

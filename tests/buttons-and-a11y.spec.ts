@@ -667,6 +667,14 @@ test.describe('Крупные стеклянные панели: блик ров
     }, sel);
     if (!geo) return null;
 
+    await page.evaluate(() => {
+      const st = document.createElement('style');
+      st.id = 'zamer-bez-sceny';
+      st.textContent = '.scene-layer { visibility: hidden !important; }';
+      document.head.appendChild(st);
+    });
+    await page.waitForTimeout(150);
+
     const band = (gutter: number) => Math.max(2, Math.floor(gutter / 3));
     const topH = band(geo.topGutter);
     const botH = band(geo.bottomGutter);
@@ -701,6 +709,10 @@ test.describe('Крупные стеклянные панели: блик ров
     };
     const [tr, tg, tb] = await mean(topShot);
     const [br, bg, bb] = await mean(botShot);
+
+    await page.evaluate(() => {
+      document.getElementById('zamer-bez-sceny')?.remove();
+    });
     return {
       top: [tr, tg, tb] as const,
       bottom: [br, bg, bb] as const,
