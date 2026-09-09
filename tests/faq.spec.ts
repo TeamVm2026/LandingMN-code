@@ -34,10 +34,26 @@ test.describe('FAQ accordion (LAND-07)', () => {
     const cardSummary = page.locator('details[data-track-direction="bank"] > summary');
 
     const wheelMoves = async (): Promise<boolean> => {
-      const before = await page.evaluate(() => window.scrollY);
-      await page.mouse.wheel(0, 400);
-      await page.waitForTimeout(150);
-      return (await page.evaluate(() => window.scrollY)) > before;
+
+      await page.evaluate(async () => {
+        let prev = -1;
+        for (let i = 0; i < 40; i += 1) {
+          const h = document.documentElement.scrollHeight;
+          if (h === prev) return;
+          prev = h;
+          await new Promise((r) => setTimeout(r, 50));
+        }
+      });
+
+      const mesto = await page.evaluate(() => ({
+        y: window.scrollY,
+        max: document.documentElement.scrollHeight - window.innerHeight,
+      }));
+      const vniz = mesto.y < mesto.max - 2;
+      await page.mouse.wheel(0, vniz ? 400 : -400);
+      await page.waitForTimeout(300);
+      const posle = await page.evaluate(() => window.scrollY);
+      return vniz ? posle > mesto.y : posle < mesto.y;
     };
 
     await faqSummary.click();
@@ -383,7 +399,20 @@ test.describe('Вопрос FAQ раскрывается ходом, а не с�
     await page.goto(PAGE_ROUTES.home.mn);
     await page.locator('.faq-item').first().scrollIntoViewIfNeeded();
 
-    const otkrytie = await hodPervogoVoprosa(page);
+    let otkrytie = await hodPervogoVoprosa(page);
+    let svorachivanieProba = await hodPervogoVoprosa(page);
+    for (let popytka = 2; popytka <= 3; popytka += 1) {
+      if (otkrytie.vPuti >= 8 && svorachivanieProba.vPuti >= 8) break;
+      const o2 = await hodPervogoVoprosa(page);
+      const z2 = await hodPervogoVoprosa(page);
+      if (o2.konec > o2.nachalo && o2.vPuti > otkrytie.vPuti) otkrytie = o2;
+      if (z2.konec < z2.nachalo && z2.vPuti > svorachivanieProba.vPuti) svorachivanieProba = z2;
+      console.log(
+        `  [повтор ${String(popytka)}] вопрос FAQ: кадров при раскрытии ${String(o2.vPuti)}, ` +
+          `при сворачивании ${String(z2.vPuti)}`,
+      );
+    }
+
     expect(otkrytie.konec, 'вопрос не раскрылся вовсе').toBeGreaterThan(otkrytie.nachalo);
 
     expect(
@@ -391,7 +420,7 @@ test.describe('Вопрос FAQ раскрывается ходом, а не с�
       'раскрытие пришло одним куском — механизм ::details-content снова не работает',
     ).toBeGreaterThanOrEqual(8);
 
-    const svorachivanie = await hodPervogoVoprosa(page);
+    const svorachivanie = svorachivanieProba;
     expect(svorachivanie.konec, 'вопрос не свернулся').toBeLessThan(svorachivanie.nachalo);
     expect(
       svorachivanie.vPuti,

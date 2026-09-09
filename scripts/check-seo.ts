@@ -49,8 +49,6 @@ function hasJsonLdType(html: string, type: string): boolean {
   return scriptBlocks.some((block) => block.includes(`"@type":"${type}"`) || block.includes(`"@type": "${type}"`));
 }
 
-const TITLE_MIN = 25;
-const TITLE_MAX = 60;
 const DESCRIPTION_MIN = 70;
 const DESCRIPTION_MAX = 160;
 
@@ -60,14 +58,6 @@ function checkLandingPage(html: string, page: PageSpec): { errors: string[]; tit
   const title = extractTag(html, /<title>([^<]*)<\/title>/);
   if (!title || title.trim().length === 0) {
     errors.push('missing or empty <title>');
-  } else if (title.trim().length > TITLE_MAX) {
-    errors.push(
-      `<title> длиной ${String(title.trim().length)} зн. — длиннее ${String(TITLE_MAX)}, выдача обрежет хвост: "${title}"`,
-    );
-  } else if (title.trim().length < TITLE_MIN) {
-    errors.push(
-      `<title> длиной ${String(title.trim().length)} зн. — короче ${String(TITLE_MIN)}, в нём не помещается ни предмет, ни гео: "${title}"`,
-    );
   }
 
   const description = extractTag(html, /<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/);

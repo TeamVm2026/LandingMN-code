@@ -1000,6 +1000,7 @@ test.describe('ПК-раскладка по макету', () => {
     await page.goto(PAGE_ROUTES.home.ru);
 
     const m = await page.evaluate(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
       const R = (s: string) => {
         const el = document.querySelector(s);
         if (!el) return null;
@@ -1007,8 +1008,19 @@ test.describe('ПК-раскладка по макету', () => {
         return { top: r.top + window.scrollY, bottom: r.bottom + window.scrollY };
       };
       const hero = document.querySelector('.hero')!.getBoundingClientRect();
-      return { h1: R('.hero h1'), acts: R('.hero-actions'), heroH: hero.height };
+      return {
+        h1: R('.hero h1'),
+        acts: R('.hero-actions'),
+        heroH: hero.height,
+        scrollY: window.scrollY,
+      };
     });
+
+    expect(
+      m.scrollY,
+      `страница стоит на ${String(m.scrollY)}px, а не в начале — сравнение с сгибом окна ` +
+        'потеряло смысл, и число ниже говорило бы не о вёрстке',
+    ).toBe(0);
 
     expect(m.acts!.bottom, 'кнопки первого экрана ушли за сгиб 900px').toBeLessThan(900);
 
