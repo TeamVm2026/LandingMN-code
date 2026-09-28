@@ -100,4 +100,106 @@ const missingDist: SabotageCase = {
   },
 };
 
-export const cases: SabotageCase[] = [placeholdersOnProd, missingDist];
+const GREEN_CLEAN: GreenRun = {
+  command: [
+    '--experimental-strip-types',
+    'scripts/check-placeholders.ts',
+    '--dist',
+    'scripts/sabotage/fixtures/placeholders-clean-dist',
+  ],
+  env: { PUBLIC_SITE_URL: 'https://partner-melbet.com' },
+};
+
+function prodCase(
+  id: string,
+  describe: string,
+  build: (id: string) => void,
+  expectOutputContains = 'ЗАГЛУШКИ В БОЕВОЙ СБОРКЕ'
+): SabotageCase {
+  return {
+    id,
+    gate: 'check:placeholders',
+    describe,
+    setup() {
+      build(id);
+      setProdDomain();
+    },
+    command: [
+      '--experimental-strip-types',
+      'scripts/check-placeholders.ts',
+      '--dist',
+      argPath(distPath(id)),
+    ],
+    expectOutputContains,
+    greenRun: GREEN_CLEAN,
+    teardown() {
+      restoreEnv();
+      cleanupDist(id);
+    },
+  };
+}
+
+const changeme = prodCase(
+  'placeholders-changeme-on-prod',
+  'PUBLIC_MESSENGER_URL заполнен временным m.me/changeme и уехал в боевую сборку',
+  (id) =>
+    writeFakeDist(
+      id,
+      '<!doctype html><html lang="mn"><body>' +
+        '<a href="https://t.me/melbet_mongolia_manager">Telegram</a>' +
+        '<a href="https://m.me/changeme">Messenger</a>' +
+        '</body></html>\n'
+    )
+);
+
+const exampleDomain = prodCase(
+  'placeholders-example-domain-on-prod',
+  'контакт заполнен доменом-примером https://example.com/soon',
+  (id) =>
+    writeFakeDist(
+      id,
+      '<!doctype html><html lang="mn"><body>' +
+        '<a href="https://example.com/soon">Telegram</a>' +
+        '<a href="https://m.me/melbetmongolia">Messenger</a>' +
+        '</body></html>\n'
+    )
+);
+
+const inJsChunk = prodCase(
+  'placeholders-in-js-chunk',
+  'разметка чистая, а заглушка осталась литералом в отложенном JS-чанке',
+  (id) => {
+    writeFakeDist(
+      id,
+      '<!doctype html><html lang="mn"><body>' +
+        '<a href="https://t.me/melbet_mongolia_manager">Telegram</a>' +
+        '</body></html>\n'
+    );
+    const astro = path.join(distPath(id), '_astro');
+    mkdirSync(astro, { recursive: true });
+    writeFileSync(
+      path.join(astro, 'providers.sabotage.js'),
+      'const messenger="https://m.me/PLACEHOLDER_FB_PAGE";export{messenger};\n',
+      'utf8'
+    );
+  }
+);
+
+const emptyDist = prodCase(
+  'placeholders-empty-dist',
+  'каталог сборки есть, но осматривать в нём нечего — обход не должен считаться успехом',
+  (id) => {
+    rmSync(distPath(id), { recursive: true, force: true });
+    mkdirSync(distPath(id), { recursive: true });
+  },
+  'СБОРКА НЕ ОСМОТРЕНА'
+);
+
+export const cases: SabotageCase[] = [
+  placeholdersOnProd,
+  missingDist,
+  changeme,
+  exampleDomain,
+  inJsChunk,
+  emptyDist,
+];

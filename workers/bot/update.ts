@@ -64,7 +64,9 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function asString(value: unknown, max: number): string {
-  return typeof value === 'string' ? value.slice(0, max) : '';
+  if (typeof value !== 'string') return '';
+
+  return value.replace(/[\p{Cc}\p{Zl}\p{Zp}]+/gu, ' ').slice(0, max);
 }
 
 function asNumber(value: unknown): number | null {
@@ -133,8 +135,9 @@ export function parseUpdate(update: unknown): ParsedUpdate {
     return { kind: 'other', updateId, chatId, chatType, user };
   }
 
-  const oversized = argument.length > PAYLOAD_MAX;
-  const raw = argument.slice(0, PAYLOAD_MAX);
+  const argumentClean = asString(argument, TEXT_SCAN_MAX);
+  const oversized = argumentClean.length > PAYLOAD_MAX;
+  const raw = argumentClean.slice(0, PAYLOAD_MAX);
   const payload = oversized ? null : decodeStart(raw);
 
   return { kind: 'start', updateId, chatId, chatType, user, payload, raw };

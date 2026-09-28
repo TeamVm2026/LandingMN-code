@@ -1,5 +1,5 @@
 
-import { mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdirSync, writeFileSync, rmSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import type { SabotageCase, GreenRun } from '../check-sabotage.ts';
 
@@ -192,9 +192,64 @@ const turnstileShapeInDist: SabotageCase = {
   },
 };
 
+const FUNCTIONS_SHAPE_ID = '987654321';
+const FUNCTIONS_SHAPE_TAIL = 'AAFakeSabotageTokenInFunctionsDir00';
+const FAKE_TOKEN_IN_FUNCTIONS = `${FUNCTIONS_SHAPE_ID}:${FUNCTIONS_SHAPE_TAIL}`;
+
+const plantedFile = path.join(projectRoot, 'functions', '__sabotage-secret-scan.ts');
+
+const tokenShapeInFunctions: SabotageCase = {
+  id: 'secrets-token-shape-in-functions',
+  gate: 'check:secrets',
+  describe: 'строка формы токена Telegram вписана в functions/ — каталог, которого нет в dist/',
+  setup() {
+    if (FUNCTIONS_SHAPE_TAIL.length !== 35) {
+      throw new Error(
+        `хвост формы токена должен быть 35 символов, а он ${FUNCTIONS_SHAPE_TAIL.length}`,
+      );
+    }
+    if (!TELEGRAM_TOKEN_SHAPE.test(FAKE_TOKEN_IN_FUNCTIONS)) {
+      throw new Error('подложенная строка перестала совпадать с формой токена — случай пуст');
+    }
+    if (this.command.includes('--scan-source')) {
+      throw new Error(
+        'команда случая передаёт --scan-source: тогда он доказывает обход, а не умолчание',
+      );
+    }
+    if (existsSync(plantedFile)) {
+      throw new Error(`${argPath(plantedFile)} уже существует — саботаж затёр бы чужой файл`);
+    }
+    writeFileSync(
+      plantedFile,
+      `// временный файл саботажного стенда, удаляется в teardown()
+` +
+        `export const token = '${FAKE_TOKEN_IN_FUNCTIONS}';
+`,
+      'utf8',
+    );
+
+    writeFakeDist(this.id, 'app.js', 'export const ok=1;\n');
+  },
+  get command() {
+    return [
+      '--experimental-strip-types',
+      'scripts/check-secrets.ts',
+      '--dist',
+      argPath(path.join(tmpDir, `${this.id}-dist`)),
+    ];
+  },
+  expectOutputContains: 'ФОРМА СЕКРЕТА В БАНДЛЕ',
+  greenRun: GREEN,
+  teardown() {
+    rmSync(plantedFile, { force: true });
+    cleanupDist(this.id);
+  },
+};
+
 export const cases: SabotageCase[] = [
   valueInDist,
   clientContext,
   tokenShapeInDist,
   turnstileShapeInDist,
+  tokenShapeInFunctions,
 ];

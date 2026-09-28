@@ -87,51 +87,172 @@ test.describe('Turnstile: цена до фокуса и появление по�
     expect(suspicious).toEqual([]);
   });
 
-  test('контейнер виджета шире минимума size: flexible (300px) на экране 360px', async ({
-    page,
+  test('виджет всегда полосой вровень с полями: масштаб только там, где колонка уже 300px', async ({
     browser,
   }) => {
+    for (const width of [320, 360, 430]) {
+      const context = await browser.newContext({
+        viewport: { width, height: 800 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+      });
+      const page = await context.newPage();
+      await page.goto(PAGE_ROUTES.home.mn);
+      await page.locator(NAME_FIELD).focus();
+      await page.waitForSelector(`${TURNSTILE_CONTAINER} > div`, { state: 'attached', timeout: 20_000 });
 
-    await page.setViewportSize({ width: 360, height: 800 });
+      const m = await page.evaluate((selector) => {
+        const container = document.querySelector<HTMLElement>(selector)!;
+        const mount = container.firstElementChild as HTMLElement;
+        return {
+          column: container.clientWidth,
+          mountWidth: mount.getBoundingClientRect().width,
+          transform: mount.style.transform,
+          zoom: mount.style.zoom,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      }, TURNSTILE_CONTAINER);
+      console.log(
+        `[замер] ${width}px: колонка ${m.column}px, обёртка ${m.mountWidth.toFixed(1)}px, transform «${m.transform}», zoom «${m.zoom}»`,
+      );
+
+      expect(m.column, 'ширина колонки формы не определена').toBeGreaterThan(0);
+      expect(
+        Math.abs(m.mountWidth - m.column),
+        `${width}px: обёртка виджета ${m.mountWidth.toFixed(1)}px не вровень с колонкой ${m.column}px`,
+      ).toBeLessThanOrEqual(1);
+
+      expect(m.zoom, `${width}px: у обёртки виджета снова zoom`).toBe('');
+      if (m.column < 300) {
+        const scale = Number(/^scale\(([\d.]+)\)$/.exec(m.transform)?.[1]);
+        expect(scale, `${width}px: колонка ${m.column}px, а масштаба нет`).toBeCloseTo(m.column / 300, 3);
+      } else {
+        expect(m.transform, `${width}px: колонка ${m.column}px, а виджет всё равно уменьшен`).toBe('');
+      }
+      expect(m.overflow, `${width}px: страница получила горизонтальную прокрутку`).toBeLessThanOrEqual(0);
+      await context.close();
+    }
+  });
+});
+
+test.describe('Turnstile: видимая проверка (ключ принудительного челленджа)', () => {
+
+  test.skip(
+    () => SITEKEY !== TEST_SITEKEYS.challenge && SITEKEY !== TEST_SITEKEYS.pass,
+    `нужен тестовый sitekey ${TEST_SITEKEYS.pass} или ${TEST_SITEKEYS.challenge}`,
+  );
+
+  async function openChallenge(page: Page): Promise<void> {
+    let swapped = 0;
+    if (SITEKEY === TEST_SITEKEYS.pass) {
+      await page.route('**/_astro/*.js', async (route) => {
+        const response = await route.fetch();
+        const body = await response.text();
+        if (body.includes(TEST_SITEKEYS.pass)) swapped++;
+        await route.fulfill({ response, body: body.split(TEST_SITEKEYS.pass).join(TEST_SITEKEYS.challenge) });
+      });
+    }
     await page.goto(PAGE_ROUTES.home.mn);
-    const plain = await page.locator(TURNSTILE_CONTAINER).evaluate((el) => el.clientWidth);
+    await page.locator(NAME_FIELD).focus();
+    await expect
+      .poll(() => page.locator(TURNSTILE_CONTAINER).evaluate((el) => el.getBoundingClientRect().height), {
+        timeout: 30_000,
+        message: 'проверка Cloudflare так и не показалась',
+      })
+      .toBeGreaterThan(0);
+    if (SITEKEY === TEST_SITEKEYS.pass) {
+      expect(swapped, 'ключ «всегда проходит» не найден ни в одном чанке — подмена не сработала').toBeGreaterThan(0);
+    }
 
-    const mobileContext = await browser.newContext({
-      viewport: { width: 360, height: 800 },
+    await page.waitForTimeout(1500);
+  }
+
+  async function measure(page: Page) {
+    const frames = page.frames().filter((frame) => frame.url().includes(TURNSTILE_HOST));
+    for (const frame of frames) {
+      const element = await frame.frameElement();
+      const box = await element.boundingBox();
+      if (!box || box.height <= 1) continue;
+      const layout = await element.evaluate((el) => ({
+        width: (el as HTMLElement).offsetWidth,
+        height: (el as HTMLElement).offsetHeight,
+      }));
+      const inner = await frame.evaluate(() => ({ dpr: devicePixelRatio, width: innerWidth, height: innerHeight }));
+      const outer = await page.evaluate((selector) => {
+        const container = document.querySelector<HTMLElement>(selector)!;
+        const rect = container.getBoundingClientRect();
+        return {
+          dpr: devicePixelRatio,
+          column: container.clientWidth,
+          containerTop: rect.top,
+          containerHeight: rect.height,
+          overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        };
+      }, TURNSTILE_CONTAINER);
+      return { box, layout, inner, ...outer };
+    }
+    throw new Error('видимого iframe Cloudflare на странице нет');
+  }
+
+  test('чужой документ не уменьшается, виджет вровень с полями, контейнер ровно по виджету', async ({ browser }) => {
+
+    let referenceDpr: number | null = null;
+    for (const width of [430, 320, 360]) {
+      const context = await browser.newContext({
+        viewport: { width, height: 800 },
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+      });
+      const page = await context.newPage();
+      await openChallenge(page);
+      const m = await measure(page);
+      console.log(
+        `[замер] ${width}px: колонка ${m.column}, iframe ${m.box.width.toFixed(1)}×${m.box.height.toFixed(1)} ` +
+          `(в раскладке ${m.layout.width}×${m.layout.height}), внутри ${m.inner.width}×${m.inner.height} ` +
+          `при dpr ${m.inner.dpr} (страница ${m.dpr}), контейнер ${m.containerHeight.toFixed(1)}`,
+      );
+
+      referenceDpr ??= m.inner.dpr;
+      expect(m.inner.dpr, `${width}px: масштаб обёртки утёк в документ Cloudflare`).toBeCloseTo(referenceDpr, 3);
+
+      expect(
+        { width: m.inner.width, height: m.inner.height },
+        `${width}px: окно документа Cloudflare не совпадает с коробкой iframe`,
+      ).toEqual({ width: m.layout.width, height: m.layout.height });
+
+      expect(
+        Math.abs(m.box.width - m.column),
+        `${width}px: виджет ${m.box.width.toFixed(1)}px при колонке ${m.column}px`,
+      ).toBeLessThanOrEqual(1);
+
+      expect(
+        Math.abs(m.containerHeight - m.box.height),
+        `${width}px: контейнер ${m.containerHeight.toFixed(1)}px при видимом виджете ${m.box.height.toFixed(1)}px`,
+      ).toBeLessThanOrEqual(0.5);
+      expect(Math.abs(m.box.y - m.containerTop), `${width}px: виджет сдвинут внутри контейнера`).toBeLessThanOrEqual(0.5);
+      expect(m.overflow, `${width}px: страница получила горизонтальную прокрутку`).toBeLessThanOrEqual(0);
+      await context.close();
+    }
+  });
+
+  test('на самой узкой колонке галочка нажимается сквозь уменьшение, и токен приезжает', async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 320, height: 800 },
       isMobile: true,
       hasTouch: true,
       deviceScaleFactor: 3,
     });
-    const mobilePage = await mobileContext.newPage();
-    await mobilePage.goto(PAGE_ROUTES.home.mn);
-    const mobile = await mobilePage.locator(TURNSTILE_CONTAINER).evaluate((el) => el.clientWidth);
-    await mobileContext.close();
+    const page = await context.newPage();
+    await openChallenge(page);
+    const m = await measure(page);
+    const scale = m.box.width / m.layout.width;
+    expect(scale, 'на 320 виджет обязан быть уменьшен — иначе тест не про то').toBeLessThan(0.95);
 
-    console.log(
-      `[замер] ширина ${TURNSTILE_CONTAINER} на 360px: обычный контекст ${plain}px, мобильная эмуляция ${mobile}px (порог flexible 300px)`,
-    );
-
-    const expectedSize = (width: number): 'flexible' | 'compact' =>
-      width >= 300 ? 'flexible' : 'compact';
-
-    expect(plain, 'ширина контейнера в обычном контексте не определена').toBeGreaterThan(0);
-    expect(mobile, 'ширина контейнера в мобильной эмуляции не определена').toBeGreaterThan(0);
-
-    for (const [name, width] of [
-      ['обычный контекст', plain],
-      ['мобильная эмуляция', mobile],
-    ] as const) {
-      const size = expectedSize(width);
-      if (size === 'compact') {
-
-        expect(
-          width,
-          `${name}: ${width}px не вмещает даже compact (150px) — форма схлопнулась`,
-        ).toBeGreaterThanOrEqual(150);
-      } else {
-        expect(width, `${name}: ${width}px объявлен как flexible`).toBeGreaterThanOrEqual(300);
-      }
-    }
+    await page.mouse.click(m.box.x + 28 * scale, m.box.y + m.box.height / 2);
+    await expect.poll(() => tokenValue(page), { timeout: 20_000 }).toBeTruthy();
+    await context.close();
   });
 });
 
@@ -184,15 +305,39 @@ test.describe('Turnstile: ключ, который всегда проходит
 });
 
 test.describe('Turnstile: ключ, который всегда отказывает', () => {
+
   test.skip(
-    () => SITEKEY !== TEST_SITEKEYS.fail,
-    `нужен sitekey ${TEST_SITEKEYS.fail} (собирается отдельным прогоном: один ключ на одну сборку)`,
+    () => SITEKEY !== TEST_SITEKEYS.fail && SITEKEY !== TEST_SITEKEYS.pass,
+    `нужен тестовый sitekey ${TEST_SITEKEYS.pass} или ${TEST_SITEKEYS.fail}`,
   );
+
+  let swapped = 0;
+
+  test.beforeEach(async ({ page }) => {
+    swapped = 0;
+    if (SITEKEY !== TEST_SITEKEYS.pass) return;
+    await page.route('**/_astro/*.js', async (route) => {
+      const response = await route.fetch();
+      const body = await response.text();
+      if (body.includes(TEST_SITEKEYS.pass)) swapped++;
+      await route.fulfill({ response, body: body.split(TEST_SITEKEYS.pass).join(TEST_SITEKEYS.fail) });
+    });
+  });
 
   test('поле токена существует и ПУСТО, а кнопка отправки не заблокирована', async ({ page }) => {
     await page.goto(PAGE_ROUTES.home.mn);
     await page.waitForLoadState('networkidle');
+
+    const failed = page.waitForEvent('console', {
+      predicate: (m) => /Turnstile\] Error: 600010/.test(m.text()),
+      timeout: 30_000,
+    });
     await page.locator(NAME_FIELD).focus();
+    await failed;
+
+    if (SITEKEY === TEST_SITEKEYS.pass) {
+      expect(swapped, 'ключ «всегда проходит» не найден ни в одном чанке — подмена не сработала').toBeGreaterThan(0);
+    }
 
     await expect.poll(() => tokenValue(page), { timeout: 20_000 }).not.toBeNull();
     expect(await tokenValue(page)).toBe('');

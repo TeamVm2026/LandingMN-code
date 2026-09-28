@@ -54,14 +54,77 @@ const BOT_REQUIRED_KEYS: Record<string, string> = {
     'фраза передачи менеджеру. Дословный выбор заказчика 22.08.2026 — «бот с передачей менеджеру»: человек жмёт кнопку на сайте и СРАЗУ получает живого человека. Без этой строки первое сообщение бота ничего не передаёт, и бот превращается ровно в то препятствие перед конверсией, ради отсутствия которого его и завели',
   'reply.manager_button':
     'надпись кнопки, ведущей на менеджера. Её пропажа тише всех: текст ответа на месте, кнопка в разметке на месте — и приезжает к человеку безымянным прямоугольником. Безымянная кнопка уже стоила заказчику непонимания, что это вообще кнопка (круг 8 правок Фазы 2.4)',
+
+  'reply.greeting':
+    'первая строка ответа НОВОМУ человеку. Стоит в одном тернарнике с reply.repeat_note; при пропаже сообщение начинается сразу с направления, то есть бот отвечает без приветствия и это выглядит поломкой, а не лаконичностью',
+  'reply.repeat_note':
+    'первая строка ответа ВЕРНУВШЕМУСЯ человеку — единственное место, где бот показывает, что узнал его (BOT-03, «повторный лид»). При пропаже вернувшийся получает ответ без первой строки, и отличить его от нового становится нечем',
 };
 
 const REQUIRED_KEYS: Record<string, string> =
   dictSet === 'bot' ? BOT_REQUIRED_KEYS : SITE_REQUIRED_KEYS;
 
+function findDuplicateKeys(text: string): { path: string; line: number }[] {
+  const found: { path: string; line: number }[] = [];
+  const stack: { keys: Set<string>; path: string; kind: 'object' | 'array'; lastKey: string | null }[] = [];
+  let line = 1;
+  let i = 0;
+  let pendingKey: string | null = null;
+  while (i < text.length) {
+    const ch = text[i]!;
+    if (ch === '\n') line++;
+    if (ch === '"') {
+      let j = i + 1;
+      let value = '';
+      while (j < text.length && text[j] !== '"') {
+        if (text[j] === '\\') {
+          value += text[j]! + (text[j + 1] ?? '');
+          j += 2;
+          continue;
+        }
+        if (text[j] === '\n') line++;
+        value += text[j]!;
+        j++;
+      }
+
+      let k = j + 1;
+      while (k < text.length && /\s/.test(text[k]!)) k++;
+      const top = stack[stack.length - 1];
+      if (text[k] === ':' && top && top.kind === 'object') {
+        const key = JSON.parse('"' + value + '"') as string;
+        const full = top.path ? top.path + '.' + key : key;
+        if (top.keys.has(key)) found.push({ path: full, line });
+        top.keys.add(key);
+        pendingKey = full;
+      }
+      i = j + 1;
+      continue;
+    }
+    if (ch === '{' || ch === '[') {
+      const parent = stack[stack.length - 1];
+      const here = pendingKey ?? (parent ? parent.path : '');
+      stack.push({ keys: new Set(), path: here, kind: ch === '{' ? 'object' : 'array', lastKey: null });
+      pendingKey = null;
+    } else if (ch === '}' || ch === ']') {
+      stack.pop();
+      pendingKey = null;
+    } else if (ch === ',') {
+      pendingKey = null;
+    }
+    i++;
+  }
+  return found;
+}
+
+const duplicateReport: string[] = [];
+
 function readDict(locale: string): Record<string, unknown> {
   const file = path.join(dictDir, `${locale}.json`);
-  return JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+  const text = readFileSync(file, 'utf8');
+  for (const d of findDuplicateKeys(text)) {
+    duplicateReport.push(`${locale}.json, строка ${d.line}: ключ «${d.path}» объявлен повторно`);
+  }
+  return JSON.parse(text) as Record<string, unknown>;
 }
 
 function flatten(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
@@ -87,6 +150,11 @@ for (const name of localeNames) {
 }
 
 let hasError = false;
+
+for (const d of duplicateReport) {
+  console.error(`i18n error: ДУБЛЬ КЛЮЧА — ${d}. JSON.parse оставит только последнее значение, остальные молча потеряются.`);
+  hasError = true;
+}
 
 for (const key of allKeys) {
   for (const name of localeNames) {

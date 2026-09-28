@@ -47,8 +47,8 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
 
   <div class="hero-media" aria-hidden="true">
     <picture>
-      <source media="(max-width: 859px)" type="image/avif" srcset={portraitAvif.srcSet.attribute} sizes={PORTRAIT_SIZES} />
-      <source media="(max-width: 859px)" type="image/webp" srcset={portraitWebp.srcSet.attribute} sizes={PORTRAIT_SIZES} />
+      <source media="(max-width: 859.98px)" type="image/avif" srcset={portraitAvif.srcSet.attribute} sizes={PORTRAIT_SIZES} />
+      <source media="(max-width: 859.98px)" type="image/webp" srcset={portraitWebp.srcSet.attribute} sizes={PORTRAIT_SIZES} />
       <source type="image/avif" srcset={wideAvif.srcSet.attribute} sizes={WIDE_SIZES} />
       <source type="image/webp" srcset={wideWebp.srcSet.attribute} sizes={WIDE_SIZES} />
 
@@ -60,6 +60,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
         loading="eager"
         fetchpriority="high"
         decoding="sync"
+        draggable="false"
       />
     </picture>
   </div>
@@ -86,8 +87,9 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
             sizes="239vw"
             quality={45}
             alt=""
-            loading="lazy"
+            loading="eager"
             decoding="async"
+            draggable="false"
           />
         </div>
         <ContactActions locale={locale} variant="hero" />
@@ -102,10 +104,16 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
 
       <ul class="hero-stats">
         <li class="hero-stat">
+          {t(locale, 'hero.stat_partners.lead') && (
+            <span class="hero-stat-lead type-label">{t(locale, 'hero.stat_partners.lead')}</span>
+          )}
           <span class="hero-stat-value">{t(locale, 'hero.stat_partners.value')}</span>
           <span class="hero-stat-label type-label">{t(locale, 'hero.stat_partners.label')}</span>
         </li>
         <li class="hero-stat">
+          {t(locale, 'hero.stat_share.lead') && (
+            <span class="hero-stat-lead type-label">{t(locale, 'hero.stat_share.lead')}</span>
+          )}
           <span class="hero-stat-value">{t(locale, 'hero.stat_share.value')}</span>
           <span class="hero-stat-label type-label">{t(locale, 'hero.stat_share.label')}</span>
         </li>
@@ -123,19 +131,19 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     flex-direction: column;
     justify-content: flex-end;
 
-    min-height: 100svh;
+    min-height: var(--hero-vh, 100svh);
     overflow: hidden;
   }
 
   .hero {
     margin-top: -74px;
-    min-height: calc(100svh + 74px);
+    min-height: calc(var(--hero-vh, 100svh) + 74px);
   }
 
   @media (min-width: 860px) {
     .hero {
       margin-top: -82px;
-      min-height: calc(100svh + 82px);
+      min-height: calc(var(--hero-vh, 100svh) + 82px);
       justify-content: center;
     }
   }
@@ -182,7 +190,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
 
   @media (prefers-reduced-motion: no-preference) {
     .hero-media :global(img) {
-      animation: hero-settle var(--motion-base) var(--ease-charge) both;
+      animation: hero-settle var(--motion-base) var(--ease-charge) backwards;
     }
   }
 
@@ -200,13 +208,14 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
       radial-gradient(circle 2.2px at 68.1% 9.8%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0.30) 45%, transparent 100%),
       radial-gradient(circle 2.2px at 45.7% 10.6%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%),
       radial-gradient(circle 2.2px at 88.6% 21.2%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%),
-      radial-gradient(circle 2.2px at 12.5% 23.2%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%),
+
+      radial-gradient(circle 2.2px at 12.5% 20.5%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%),
       radial-gradient(circle 2.2px at 84.4% 34.0%, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%),
       radial-gradient(circle 2.2px at 12.2% var(--hero-star-left-low), rgba(255, 255, 255, 0.86) 0%, rgba(255, 255, 255, 0.33) 45%, transparent 100%),
       radial-gradient(circle 2.2px at 59.4% var(--hero-star-mid-low), rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0.38) 45%, transparent 100%);
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .hero {
       --hero-star-left-low: 12.4%;
       --hero-star-mid-low: 16.4%;
@@ -234,7 +243,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
       );
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .hero-scrim {
       background:
         var(--hero-stars),
@@ -266,7 +275,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     .hero-inner {
       padding-block: clamp(60px, 8vh, 90px)
         calc(var(--hero-overlap) + clamp(96px, 15vh, 140px));
-      transform: translateY(calc(-1 * min(var(--consent-h, 0px), 22svh)));
+      transform: translateY(calc(-1 * min(var(--consent-h, 0px), var(--hero-vh, 100svh) * 0.22)));
       transition: transform var(--motion-base) var(--ease-charge);
     }
   }
@@ -292,7 +301,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     }
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .hero {
       justify-content: flex-start;
     }
@@ -300,7 +309,8 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     .hero-inner {
       display: flex;
       flex: 1 1 auto;
-      padding-block: clamp(96px, 12.8svh, 140px) calc(74px + clamp(120px, 28svh, 300px));
+      padding-block: clamp(96px, calc(var(--hero-vh, 100svh) * 0.128), 140px)
+        calc(74px + clamp(120px, calc(var(--hero-vh, 100svh) * 0.28), 300px));
     }
 
     .hero-copy {
@@ -324,7 +334,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     overflow-wrap: break-word;
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .hero-h1 {
       margin-top: auto;
       margin-bottom: var(--space-2xl);
@@ -444,7 +454,7 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     gap: 4px;
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .hero-stats {
       flex-wrap: nowrap;
       justify-content: center;
@@ -477,13 +487,25 @@ const [portraitAvif, portraitWebp, wideAvif, wideWebp, wideFallback] = await Pro
     text-wrap: balance;
   }
 
-  @media (max-width: 859px) {
-    .hero-stat-label {
+  .hero-stat-lead {
+    max-width: 19ch;
+    color: var(--muted);
+    text-wrap: balance;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    min-block-size: 2lh;
+  }
+
+  @media (max-width: 1049.98px) {
+    .hero-stat-label,
+    .hero-stat-lead {
       max-width: 13.2em;
     }
   }
 
-  @media (min-width: 860px) and (max-width: 1049px) {
+  @media (min-width: 860px) and (max-width: 1049.98px) {
     .hero-copy {
       margin-inline: auto;
       text-align: center;

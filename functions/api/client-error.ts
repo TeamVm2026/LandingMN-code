@@ -1,6 +1,10 @@
 
 import { readCappedBody } from '../../src/server/http/capped-body.ts';
-import { TELEGRAM_ATTEMPT_TIMEOUT_MS, deliverWithRetries } from '../../src/server/lead/telegram.ts';
+import {
+  TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
+  deliverWithRetries,
+} from '../../src/server/lead/telegram.ts';
 import { buildCapNoticeMessage, buildReportMessage } from '../../src/server/report/message.ts';
 import {
   bumpIpDelivered,
@@ -125,7 +129,8 @@ export const onRequestPost: PagesFunction<ReportEnv> = async (context) => {
         text,
         fetchImpl,
         sleep: (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-        apiBase: (env.TG_API_BASE ?? '').trim() === '' ? undefined : env.TG_API_BASE,
+
+        apiBase: allowedApiBase(env.TG_API_BASE),
         timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
       }).catch(() => undefined),
     );

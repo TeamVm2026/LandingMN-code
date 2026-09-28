@@ -7,7 +7,12 @@ const projectRoot = path.resolve(import.meta.dirname, '..');
 const fontsDir = path.join(projectRoot, 'public', 'fonts');
 const fontPath = path.join(fontsDir, 'manrope-subset.woff2');
 const manifestPath = path.join(fontsDir, 'manrope-subset.coverage.json');
-const localeDir = path.join(projectRoot, 'src', 'i18n');
+
+const i18nArgAt = process.argv.indexOf('--i18n');
+const localeDir =
+  i18nArgAt >= 0 && process.argv[i18nArgAt + 1]
+    ? path.resolve(projectRoot, process.argv[i18nArgAt + 1]!)
+    : path.join(projectRoot, 'src', 'i18n');
 const LOCALES = ['mn', 'ru', 'en'] as const;
 
 const MAX_FONT_BYTES = 32 * 1024;
@@ -105,6 +110,15 @@ function main(): void {
         const cp = ch.codePointAt(0)!;
 
         if (cp < 0x20) continue;
+
+        if (cp === 0x00ad) {
+          if (!covered.has(0x2d)) {
+            const seen = uncovered.get(0x2d) ?? [];
+            if (!seen.includes(locale)) seen.push(locale);
+            uncovered.set(0x2d, seen);
+          }
+          continue;
+        }
         if (covered.has(cp)) continue;
         const seen = uncovered.get(cp) ?? [];
         if (!seen.includes(locale)) seen.push(locale);

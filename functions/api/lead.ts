@@ -22,6 +22,7 @@ import type { RateLimitCache } from '../../src/server/lead/rate-limit.ts';
 import { respondError, respondSuccess, wantsJson } from '../../src/server/lead/respond.ts';
 import {
   TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
   classifyTelegramResult,
   deliverWithRetries,
   sendMessage,
@@ -158,18 +159,8 @@ function sharedCache(): RateLimitCache | null {
 
 const fetchImpl = (url: string, init: RequestInit): Promise<Response> => fetch(url, init);
 
-const ALLOWED_TG_API_HOSTS = new Set(['api.telegram.org', '127.0.0.1', 'localhost', '[::1]']);
-
 function apiBaseOf(env: LeadEnv): string | undefined {
-  const base = (env.TG_API_BASE ?? '').trim();
-  if (base === '') return undefined;
-  let host: string;
-  try {
-    host = new URL(base).hostname;
-  } catch {
-    return undefined;
-  }
-  return ALLOWED_TG_API_HOSTS.has(host) ? base : undefined;
+  return allowedApiBase(env.TG_API_BASE);
 }
 
 async function alertConfigError(env: LeadEnv, cache: RateLimitCache | null): Promise<void> {

@@ -3,6 +3,7 @@ import '../styles/tokens.css';
 import { PAGE_ROUTES, type Locale } from '../i18n/routes';
 import { t } from '../i18n/t';
 import { config, ANALYTICS_ENABLED } from '../config';
+import { jsonLd } from '../lib/json-ld';
 import AttributionHead from '../components/AttributionHead.astro';
 import ConsentBanner from '../components/ConsentBanner.astro';
 
@@ -140,8 +141,8 @@ const websiteSchema = {
         </>
       )
     }
-    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
-    <script type="application/ld+json" set:html={JSON.stringify(websiteSchema)} />
+    <script type="application/ld+json" set:html={jsonLd(orgSchema)} />
+    <script type="application/ld+json" set:html={jsonLd(websiteSchema)} />
 
     <AttributionHead />
   </head>

@@ -7,6 +7,10 @@ export const TELEGRAM_ATTEMPT_TIMEOUT_MS = 5000;
 
 export const TELEGRAM_RETRY_DELAYS_MS = [1000, 4000] as const;
 
+export const DELIVERY_BUDGET_MS = 25_000;
+
+export const DELIVERY_ATTEMPT_RESERVE_MS = 6_000;
+
 export const TELEGRAM_MAX_ATTEMPTS = 3;
 
 export interface TelegramApiResponse {
@@ -67,6 +71,20 @@ export interface DeliverResult {
   reason?: string;
 }
 
+const ALLOWED_TG_API_HOSTS = new Set(['api.telegram.org', '127.0.0.1', 'localhost', '[::1]']);
+
+export function allowedApiBase(raw: string | undefined): string | undefined {
+  const base = (raw ?? '').trim();
+  if (base === '') return undefined;
+  let host: string;
+  try {
+    host = new URL(base).hostname;
+  } catch {
+    return undefined;
+  }
+  return ALLOWED_TG_API_HOSTS.has(host) ? base : undefined;
+}
+
 function methodUrl(apiBase: string, token: string, method: string): string {
   return `${apiBase.replace(/\/+$/, '')}/bot${token}/${method}`;
 }
@@ -86,7 +104,8 @@ function backoffFor(attemptsMade: number): number {
 
 export async function sendMessage(options: SendMessageOptions): Promise<SendMessageResult> {
   const { token, chatId, text, fetchImpl } = options;
-  const apiBase = options.apiBase ?? TELEGRAM_API_BASE;
+
+  const apiBase = allowedApiBase(options.apiBase) ?? TELEGRAM_API_BASE;
   const timeoutMs = options.timeoutMs ?? TELEGRAM_ATTEMPT_TIMEOUT_MS;
   const parseMode = options.parseMode === undefined ? 'HTML' : options.parseMode;
 
@@ -168,12 +187,28 @@ export async function deliverWithRetries(options: DeliverOptions): Promise<Deliv
 
   let last: TelegramFailure | null = null;
 
+  let spentMs = 0;
+
   while (attempts < TELEGRAM_MAX_ATTEMPTS) {
     const delayMs = pendingDelayMs ?? (attempts > 0 ? backoffFor(attempts) : 0);
-    if (delayMs > 0) await options.sleep(delayMs);
+    if (delayMs > 0) {
+
+      if (spentMs + delayMs + DELIVERY_ATTEMPT_RESERVE_MS > DELIVERY_BUDGET_MS) {
+        const overBudget = `ожидание ${String(Math.round(delayMs / 1000))} с не помещается в бюджет доставки`;
+
+        last = last
+          ? { ...last, reason: `${last.reason} (${overBudget})` }
+          : { kind: 'retry', delayMs, reason: `Telegram попросил подождать: ${overBudget}` };
+        break;
+      }
+      await options.sleep(delayMs);
+      spentMs += delayMs;
+    }
     pendingDelayMs = undefined;
 
+    const attemptStartedAt = Date.now();
     const result = await sendMessage(options);
+    spentMs += Date.now() - attemptStartedAt;
     attempts += 1;
     const disposition = classifyTelegramResult(result, attempts);
 

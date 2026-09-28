@@ -5,11 +5,25 @@ import path from 'node:path';
 const projectRoot = path.resolve(import.meta.dirname, '..');
 const EXCEPTION_MARKER = 'motion-safety: decorative-exception';
 
+function argValue(name: string, fallback: string): string {
+  const argv = process.argv.slice(2);
+  const i = argv.indexOf(`--${name}`);
+  if (i === -1) return fallback;
+  const value = argv[i + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`FAIL: у аргумента --${name} нет значения`);
+    process.exit(1);
+  }
+  return value;
+}
+
+const srcRoot = path.resolve(projectRoot, argValue('src', 'src'));
+
 const SCAN_TARGETS: { dir: string; ext: string }[] = [
-  { dir: path.join(projectRoot, 'src', 'components'), ext: '.astro' },
-  { dir: path.join(projectRoot, 'src', 'layouts'), ext: '.astro' },
-  { dir: path.join(projectRoot, 'src', 'pages'), ext: '.astro' },
-  { dir: path.join(projectRoot, 'src', 'styles'), ext: '.css' },
+  { dir: path.join(srcRoot, 'components'), ext: '.astro' },
+  { dir: path.join(srcRoot, 'layouts'), ext: '.astro' },
+  { dir: path.join(srcRoot, 'pages'), ext: '.astro' },
+  { dir: path.join(srcRoot, 'styles'), ext: '.css' },
 ];
 
 interface OpacityZeroFinding {
@@ -196,6 +210,17 @@ function main(): void {
   for (const target of SCAN_TARGETS) {
     if (target.ext === '.astro') walkDir(target.dir, '.astro', astroFiles);
     else walkDir(target.dir, '.css', cssFiles);
+  }
+
+  if (astroFiles.length === 0 || cssFiles.length === 0) {
+    console.error(
+      `ИСХОДНИКИ НЕ ОСМОТРЕНЫ: обход дал ${astroFiles.length} файл(ов) .astro и ` +
+        `${cssFiles.length} файл(ов) .css в ${path.relative(projectRoot, srcRoot) || '.'}/.\n` +
+        'Проверка, не открывшая ни одного файла одного из двух видов, ничего не\n' +
+        'подтверждает: «0 нарушений» здесь неотличимо от «не смотрел». Скорее всего\n' +
+        'переехал каталог — поправьте SCAN_TARGETS.',
+    );
+    process.exit(1);
   }
 
   for (const file of astroFiles) {

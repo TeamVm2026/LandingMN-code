@@ -3,7 +3,7 @@ import { chromium, type Browser, type Page } from 'playwright';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
-import { occupiedPorts, portGuardMessage, checkBuildFreshness, freshnessGuardMessage } from './lib/preflight.ts';
+import { GUARDED_PORTS, occupiedPorts, portGuardMessage, checkBuildFreshness, freshnessGuardMessage } from './lib/preflight.ts';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
 const phaseDirSlug = process.argv[2] ?? '02-static-presentation';
@@ -16,7 +16,7 @@ const screenshotsDir = path.join(
 );
 mkdirSync(screenshotsDir, { recursive: true });
 
-const PORT = 4321;
+const PORT = Number(process.env.PREVIEW_PORT ?? 4321);
 const BASE_URL = `http://localhost:${PORT}`;
 const LOCALES = ['mn', 'ru', 'en'] as const;
 type Locale = (typeof LOCALES)[number];
@@ -102,14 +102,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const occupied = await occupiedPorts();
+  const guardedPorts = GUARDED_PORTS.map((port) => (port === 4321 ? PORT : port));
+  const occupied = await occupiedPorts(guardedPorts);
   if (occupied.length > 0) {
     console.error(portGuardMessage(occupied));
     process.exit(1);
   }
 
   console.log('Starting preview server (npm run preview)...');
-  const server = spawn('npm', ['run', 'preview'], {
+
+  const server = spawn('npm', ['run', 'preview', '--', '--port', String(PORT)], {
     cwd: projectRoot,
     shell: true,
     stdio: 'ignore',

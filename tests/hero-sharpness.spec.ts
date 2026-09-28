@@ -114,7 +114,7 @@ test.describe('Фотография первого экрана не доход�
           await page.waitForLoadState('networkidle');
           const geo = await readGeometry(page);
 
-          await page.evaluate((y) => window.scrollTo(0, y), Math.max(0, Math.round(geo.surfTop - 220)));
+          await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' as ScrollBehavior }), Math.max(0, Math.round(geo.surfTop - 220)));
           await page.waitForTimeout(600);
           const scrollY = await page.evaluate(() => window.scrollY);
           const shot = await page.screenshot();

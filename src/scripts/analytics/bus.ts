@@ -3,7 +3,7 @@ import type { EventName, EventParams } from './events';
 
 type Sink = (name: EventName, params: EventParams) => void;
 
-const QUEUE_CAP = 50;
+export const QUEUE_CAP = 50;
 
 export interface Bus {
 

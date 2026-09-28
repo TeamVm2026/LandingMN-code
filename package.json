@@ -7,18 +7,22 @@
     "node": ">=22.19.0"
   },
   "scripts": {
+    "preinstall": "node scripts/check-node-version.mjs",
     "dev": "astro dev",
     "build": "astro build && node --experimental-strip-types scripts/build-csp.ts",
     "preview": "astro preview",
     "astro": "astro",
     "check": "astro check",
     "lint": "eslint . --max-warnings 0",
+    "check:node-version": "node scripts/check-node-version.mjs",
+    "check:ci-guard": "node scripts/check-ci-guard.mjs",
     "check:i18n": "node --experimental-strip-types scripts/check-i18n-completeness.ts",
     "check:i18n:bot": "node --experimental-strip-types scripts/check-i18n-completeness.ts --dir workers/bot/i18n --set bot",
     "check:hreflang": "node --experimental-strip-types scripts/check-hreflang.ts",
     "check:seo": "node --experimental-strip-types scripts/check-seo.ts",
     "check:perf": "node --experimental-strip-types scripts/check-perf-budget.ts",
     "check:motion-safety": "node --experimental-strip-types scripts/check-motion-safety.ts",
+    "check:cascade-order": "node --experimental-strip-types scripts/check-cascade-order.ts",
     "check:mask-safety": "node --experimental-strip-types scripts/check-mask-safety.ts",
     "check:craft-contract": "node --experimental-strip-types scripts/check-craft-contract.ts",
     "test": "playwright test",
@@ -36,7 +40,7 @@
     "check:client-decisions": "node --experimental-strip-types scripts/check-client-decisions.ts",
     "check:sabotage": "node --experimental-strip-types scripts/check-sabotage.ts",
     "check:sabotage:full": "node --experimental-strip-types scripts/check-sabotage.ts --with-costly",
-    "check:lead-unit": "node --experimental-strip-types --test \"tests/unit/**/*.test.ts\"",
+    "check:lead-unit": "node scripts/run-unit-tests.mjs",
     "check:lead-endpoint": "node --experimental-strip-types scripts/check-lead-endpoint.ts",
     "check:bot-webhook": "node --experimental-strip-types scripts/check-bot-webhook.ts",
     "check:secrets": "node --experimental-strip-types scripts/check-secrets.ts",
@@ -44,6 +48,11 @@
     "check:turnstile-config": "node --experimental-strip-types scripts/check-turnstile-config.ts",
     "media:clouds": "node --experimental-strip-types scripts/build-cloud-layer.ts",
     "media:texture": "node --experimental-strip-types scripts/build-scene-texture.ts",
+    "visual": "node --experimental-strip-types scripts/visual-check.ts",
+    "media:prepare": "node --experimental-strip-types scripts/prepare-media.ts",
+    "media:og": "node --experimental-strip-types scripts/generate-og-images.ts",
+    "media:favicons": "node --experimental-strip-types scripts/generate-favicons.ts",
+    "screens:compare": "node --experimental-strip-types scripts/compare-screens.ts",
     "make:start-link": "node --experimental-strip-types scripts/make-start-link.ts",
     "export:public": "node --experimental-strip-types scripts/export-public.ts"
   },
@@ -67,6 +76,7 @@
     "sharp": "0.35.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.68.0",
-    "wrangler": "^4.124.0"
+    "wrangler": "^4.124.0",
+    "yaml": "^2.9.0"
   }
 }

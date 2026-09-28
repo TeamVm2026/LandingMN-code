@@ -1,5 +1,9 @@
 
-import { TELEGRAM_API_BASE, TELEGRAM_ATTEMPT_TIMEOUT_MS } from '../../src/server/lead/telegram.ts';
+import {
+  TELEGRAM_API_BASE,
+  TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
+} from '../../src/server/lead/telegram.ts';
 import type { FetchLike } from '../../src/server/lead/telegram.ts';
 import { WEBHOOK_PATH, hideToken, timingSafeEqualStr } from './webhook.ts';
 import type { BotEnv } from './webhook.ts';
@@ -62,7 +66,7 @@ async function callBotApi(
   params: Record<string, unknown>,
 ): Promise<ApiOutcome> {
   const token = (env.TG_BOT_TOKEN ?? '').trim();
-  const base = (env.TG_API_BASE ?? TELEGRAM_API_BASE).replace(/\/+$/, '');
+  const base = (allowedApiBase(env.TG_API_BASE) ?? TELEGRAM_API_BASE).replace(/\/+$/, '');
   const fetchImpl: FetchLike = deps.fetchImpl ?? ((url, init) => fetch(url, init));
   try {
     const response = await fetchImpl(`${base}/bot${token}/${method}`, {

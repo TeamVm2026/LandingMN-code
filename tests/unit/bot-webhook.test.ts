@@ -2,14 +2,22 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const defaultDir = fileURLToPath(new URL('../../workers/bot/', import.meta.url));
 const botDir = process.env.BOT_MODULE_DIR ?? defaultDir;
 const modulePath = path.join(botDir, 'webhook.ts');
 
-const { handleWebhook, timingSafeEqualStr, REQUIRED_INPUTS, WEBHOOK_SECRET_HEADER, WEBHOOK_PATH } =
+const {
+  handleWebhook,
+  timingSafeEqualStr,
+  REQUIRED_INPUTS,
+  REQUIRED_INPUT_CHECKS,
+  missingRequiredInputs,
+  WEBHOOK_SECRET_HEADER,
+  WEBHOOK_PATH,
+} =
   (await import(pathToFileURL(modulePath).href)) as typeof import('../../workers/bot/webhook.ts');
 
 const { sendMessage } = await import('../../src/server/lead/telegram.ts');
@@ -19,7 +27,8 @@ const TOKEN = '8100200300:TESTTESTTESTTESTTESTTESTTESTTESTTES';
 const CHAT = '-1002222222222';
 const TECH = '-1003333333333';
 const MANAGER = 'https://t.me/melbet_mn_manager';
-const API = 'https://api.example.invalid';
+
+const API = 'http://127.0.0.1:9099';
 const USER = 8123456789;
 const T0 = Date.parse('2026-08-22T10:00:00.000Z');
 
@@ -342,18 +351,21 @@ test('КОНВЕЙЕР: первый /start даёт 200 и РОВНО объя�
     r.trace,
     [
       'kv.get дедуп',
+
+      'fetch посетителю',
+      'kv.get окно:start',
+      'kv.put окно:start',
       'kv.put дедуп',
 
       'kv.get счётчик:start',
       'kv.put счётчик:start',
-      'fetch посетителю',
-      'kv.get окно:start',
-      'kv.put окно:start',
       'kv.put журнал',
       'fetch менеджерам',
     ],
     'ПОРЯДОК-КОНВЕЙЕРА-СМЕНИЛСЯ: ответ посетителю обязан уходить ПЕРВЫМ (решение ' +
-      'заказчика Д-01), дедупликация — до окна охлаждения, журнал — до сообщения менеджерам',
+      'заказчика Д-01), чтение метки дедупликации — до окна охлаждения, её запись — ' +
+      'только после немолчаливого вердикта окна, счётчик попыток — только ' +
+      'вместе с новым лидом, журнал — до сообщения менеджерам',
   );
   assert.equal(toVisitor(r.calls).length, 1);
   assert.equal(toChat(r.calls, CHAT).length, 1);
@@ -461,6 +473,41 @@ test('ДЕДУП: тот же update_id второй раз не проходи�
       'путь фазы, на котором лид может пропасть бесследно',
   );
   assert.ok(String(techLines[0]?.body.text ?? '').includes('42'), 'в строке нет номера апдейта');
+});
+
+function kvPuts(trace: Trace): number {
+  return trace.filter((step) => step.startsWith('kv.put')).length;
+}
+
+test('ФЛУД: 50 свободных сообщений одного человека стоят не больше трёх записей KV', async () => {
+  const store = new Map<string, unknown>();
+  const trace: Trace = [];
+  for (let i = 1; i <= 50; i++) {
+    const r = await run({ request: makeRequest({ update: textUpdate(1000 + i, `флуд ${i}`) }), store, trace });
+    assert.equal(r.response.status, 200);
+  }
+  const puts = kvPuts(trace);
+  assert.ok(
+    puts <= 3,
+    `ФЛУД-ВЫЧЕРПЫВАЕТ-KV: 50 свободных сообщений одного человека дали ${puts} записей KV — ` +
+      'бюджет записей общий с журналом заявок, и флуд боту роняет форму сайта',
+  );
+});
+
+test('ФЛУД: 50 /start одного человека стоят не больше шести записей KV', async () => {
+  const store = new Map<string, unknown>();
+  const trace: Trace = [];
+  for (let i = 1; i <= 50; i++) {
+    const r = await run({ request: makeRequest({ update: startUpdate(2000 + i) }), store, trace });
+    assert.equal(r.response.status, 200);
+  }
+  const puts = kvPuts(trace);
+
+  assert.ok(
+    puts <= 6,
+    `ФЛУД-ВЫЧЕРПЫВАЕТ-KV: 50 /start одного человека дали ${puts} записей KV — ` +
+      'бюджет записей общий с журналом заявок, и флуд боту роняет форму сайта',
+  );
 });
 
 test('ИНЕРТНОСТЬ: список обязательных входов содержит РОВНО пять имён', () => {
@@ -577,14 +624,24 @@ test('ТОКЕН: ни один ответ и ни один алерт не со
   }
 });
 
-test('ТОКЕН: воркер не пишет в консоль ни одной строки', () => {
-  const source = readFileSync(modulePath, 'utf8');
-  const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+test('ТОКЕН: НИ ОДИН модуль воркера не пишет в консоль', () => {
+
+  const dir = fileURLToPath(new URL('../../workers/bot/', import.meta.url));
+  const files = readdirSync(dir).filter((name) => name.endsWith('.ts'));
   assert.ok(
-    !/\bconsole\s*\./.test(withoutComments),
-    'КОНСОЛЬ-В-ВОРКЕРЕ: вывод `wrangler tail` видит любой, у кого есть токен аккаунта. ' +
-      'Диагностика уходит сообщением в техчат, а не в лог.',
+    files.length >= 10,
+    `КОНСОЛЬ-В-ВОРКЕРЕ: в каталоге воркера найдено ${String(files.length)} модулей вместо ` +
+      'десяти — проверка потеряла предмет измерения и молчала бы о любом console.*',
   );
+  for (const name of files) {
+    const source = readFileSync(path.join(dir, name), 'utf8');
+    const withoutComments = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.ok(
+      !/\bconsole\s*\./.test(withoutComments),
+      `КОНСОЛЬ-В-ВОРКЕРЕ: ${name} пишет в консоль. Вывод wrangler tail видит любой, у кого ` +
+        'есть токен аккаунта. Диагностика уходит сообщением в техчат, а не в лог.',
+    );
+  }
 });
 
 test('ДОСТАВКА: тело запроса без replyMarkup осталось прежним байт в байт', async () => {
@@ -771,5 +828,124 @@ test('КОНВЕЙЕР: пометка повтора несёт направл�
     'ПОВТОР-БЕЗ-НАПРАВЛЕНИЯ: интерес уточнился внутри окна, а менеджер об этом не узнал. ' +
       'Окно start длиной сутки, записи bot: для повтора нет по построению — направление ' +
       'второго тапа не сохраняется больше НИГДЕ',
+  );
+});
+
+test('ИНЕРТНОСТЬ: КАЖДОЕ имя таблицы проверяется на самом деле — по одному входу за раз', async () => {
+  for (const name of REQUIRED_INPUTS) {
+
+    const env = name === 'LEADS' ? envOf() : envOf({ [name]: '' });
+    const r = await run({
+      request: makeRequest({ update: startUpdate(1) }),
+      env: name === 'LEADS' ? { ...env, LEADS: undefined } : env,
+    });
+
+    const expected = name === 'TG_WEBHOOK_SECRET' ? 401 : 503;
+    assert.equal(
+      r.response.status,
+      expected,
+      `ИНЕРТНОСТЬ-ОСЛАБЛЕНА: без ${name} воркер не ушёл в инертность (получено ` +
+        `${String(r.response.status)}, ожидалось ${String(expected)}). Имя стоит в таблице ` +
+        'REQUIRED_INPUTS, но шаг 4 его не применяет — то есть таблица снова осиротела, ' +
+        'и недонастроенный воркер падает исключением в горячем пути вместо 503',
+    );
+    assert.equal(
+      r.calls.length,
+      0,
+      `ИНЕРТНОСТЬ-ОСЛАБЛЕНА: без ${name} воркер всё-таки сходил в сеть`,
+    );
+  }
+});
+
+test('ИНЕРТНОСТЬ: имена берутся ИЗ ТОЙ ЖЕ записи, что и проверки', () => {
+  assert.deepEqual(
+    [...REQUIRED_INPUTS].sort(),
+    Object.keys(REQUIRED_INPUT_CHECKS).sort(),
+    'ИНЕРТНОСТЬ-ОСЛАБЛЕНА: список имён разошёлся с таблицей проверок — снова два места',
+  );
+  const armed = {
+    LEADS: {},
+    TG_BOT_TOKEN: 't',
+    TG_CHAT_ID: 'c',
+    TG_WEBHOOK_SECRET: 's',
+    MANAGER_CONTACT_URL: 'u',
+  } as unknown as Parameters<typeof missingRequiredInputs>[0];
+  assert.deepEqual(missingRequiredInputs(armed), [], 'вооружённое окружение объявлено недонастроенным');
+  for (const name of REQUIRED_INPUTS) {
+    const без = { ...armed, [name]: name === 'LEADS' ? undefined : ' ' };
+    assert.deepEqual(
+      missingRequiredInputs(без as typeof armed),
+      [name],
+      `ИНЕРТНОСТЬ-ОСЛАБЛЕНА: пустой ${name} не попал в список недостающих. ` +
+        'Пробел вместо значения — это НЕ значение: `--var KEY:` на выкладке даёт именно его',
+    );
+  }
+});
+
+test('АДРЕС-API: чужой хост игнорируется — токен туда не уходит', async () => {
+  const r = await run({
+    request: makeRequest({ update: startUpdate(1) }),
+    env: envOf({ TG_API_BASE: 'https://evil.example' }),
+  });
+  assert.equal(r.response.status, 200);
+  assert.ok(r.calls.length > 0, 'проба построена неверно: ни одного исходящего запроса');
+  for (const call of r.calls) {
+    assert.ok(
+      !call.url.startsWith('https://evil.example'),
+      `АДРЕС-API-СЫРОЙ: запрос ушёл на чужой хост — ${call.url.split('/bot')[0] ?? ''}/bot<ТОКЕН>/… ` +
+        'То есть боевой токен бота уехал бы на чужой сервер вместе с адресом',
+    );
+    assert.ok(
+      call.url.startsWith('https://api.telegram.org/'),
+      'АДРЕС-API-СЫРОЙ: отвергнутый хост обязан откатываться к боевому API, а не ронять приём: ' +
+        'падение здесь стоило бы всех лидов ради переменной, которой в бою быть не должно',
+    );
+  }
+});
+
+test('АДРЕС-API: разрешённый хост действует — иначе проверка запретила бы драйверам работать', async () => {
+  const r = await run({
+    request: makeRequest({ update: startUpdate(1) }),
+    env: envOf({ TG_API_BASE: API }),
+  });
+  assert.equal(r.response.status, 200);
+  assert.ok(
+    r.calls.every((call) => call.url.startsWith(`${API}/bot`)),
+    'АДРЕС-API-ОТВЕРГАЕТ-СВОИХ: локальная петля из белого списка перестала действовать — ' +
+      'драйвер настоящего рантайма (план 06-04) висел бы на таймауте каждого POST',
+  );
+});
+
+test('СЧЁТЧИК: повтор и молчание НЕ считаются попыткой воронки', async () => {
+  const store = new Map<string, unknown>();
+  await run({ request: makeRequest({ update: startUpdate(1) }), store, now: T0 });
+  await run({ request: makeRequest({ update: startUpdate(2) }), store, now: T0 });
+  await run({ request: makeRequest({ update: startUpdate(3) }), store, now: T0 });
+
+  const counters = [...store.entries()].filter(([key]) => key.startsWith('mon:start:'));
+  const leads = [...store.keys()].filter((key) => key.startsWith('bot:'));
+  const attempts = counters.reduce((sum, [, value]) => sum + Number(value), 0);
+
+  console.log(
+    ` [замер] три обращения одного человека в окне: попыток ${String(attempts)}, ` +
+      `лидов ${String(leads.length)}`,
+  );
+  assert.equal(leads.length, 1, 'проба построена неверно: полных лидов должно быть ровно один');
+  assert.equal(
+    attempts,
+    1,
+    `ЛОЖНАЯ-ТРЕВОГА-MON-03: попыток насчитано ${String(attempts)} при ${String(leads.length)} лиде. ` +
+      'Два и больше — это пол NO_LEADS_MIN_ATTEMPTS при нуле НОВЫХ лидов в окне, то есть ' +
+      'алерт «попытки есть, лидов нет» на полностью исправной системе, вызванный обычным ' +
+      'вернувшимся человеком',
+  );
+});
+
+test('СЧЁТЧИК: свободное сообщение попыткой воронки не является', async () => {
+  const r = await run({ request: makeRequest({ update: textUpdate(7, 'сайн байна уу') }), now: T0 });
+  assert.equal(
+    r.trace.filter((step) => step === 'kv.put счётчик:start').length,
+    0,
+    'ЛОЖНАЯ-ТРЕВОГА-MON-03: «привет» боту засчитан попыткой воронки — лида он не создаёт вовсе',
   );
 });

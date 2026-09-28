@@ -7,6 +7,7 @@ import {
   TELEGRAM_RETRY_DELAYS_MS,
   classifyTelegramResult,
   deliverWithRetries,
+  DELIVERY_BUDGET_MS,
   sendMessage,
 } from '../../src/server/lead/telegram.ts';
 import type { SendMessageResult } from '../../src/server/lead/telegram.ts';
@@ -110,6 +111,41 @@ test('sendMessage: в собранный URL не попадает ничего 
   });
 
   assert.equal(f.calls[0]?.url, `http://127.0.0.1:8799/bot${TOKEN}/sendMessage`);
+});
+
+test('sendMessage: чужой хост не доезжает до адреса даже переданный сырым — фильтр стоит в модуле', async () => {
+  const f = fakeFetch([{ status: 200, payload: { ok: true } }]);
+
+  await sendMessage({
+    token: TOKEN,
+    chatId: CHAT,
+    text: TEXT,
+    fetchImpl: f.impl,
+
+    apiBase: 'https://evil.example',
+  });
+
+  const url = f.calls[0]?.url ?? '';
+  assert.equal(
+    url,
+    `${TELEGRAM_API_BASE}/bot${TOKEN}/sendMessage`,
+    'чужой хост обязан откатиться к боевому адресу, а не стать адресом отправки',
+  );
+  assert.ok(!url.includes('evil.example'), `токен ушёл на чужой хост: ${url.replace(TOKEN, '<ТОКЕН>')}`);
+});
+
+test('sendMessage: разрешённый хост фильтр в модуле не ломает — идемпотентность', async () => {
+  const f = fakeFetch([{ status: 200, payload: { ok: true } }]);
+
+  await sendMessage({
+    token: TOKEN,
+    chatId: CHAT,
+    text: TEXT,
+    fetchImpl: f.impl,
+    apiBase: 'http://127.0.0.1:9099',
+  });
+
+  assert.equal(f.calls[0]?.url, `http://127.0.0.1:9099/bot${TOKEN}/sendMessage`);
 });
 
 test('sendMessage: токен не появляется ни в возвращаемом значении, ни в тексте ошибки', async () => {
@@ -345,6 +381,50 @@ test('повторы: задержка перед первым повтором 
   });
 
   assert.deepEqual(s.waited, [7000], 'иначе retry_after первой попытки теряется и второй 429 гарантирован');
+});
+
+test('повторы: retry_after первой попытки длиннее бюджета — не спим, а сразу шлём алерт', async () => {
+  const f = fakeFetch([{ status: 200, payload: { ok: true } }]);
+  const s = fakeSleep();
+
+  const result = await deliverWithRetries({
+    token: TOKEN,
+    chatId: CHAT,
+    text: TEXT,
+    fetchImpl: f.impl,
+    sleep: s.sleep,
+    attemptsAlreadyMade: 1,
+    nextDelayMs: 40_000,
+    alert: { chatId: TECH_CHAT, leadKey: LEAD_KEY },
+  });
+
+  assert.deepEqual(s.waited, [], 'БЮДЖЕТ-ДОСТАВКИ: сон длиннее бюджета waitUntil начат — изолят погаснет во сне');
+  assert.equal(result.delivered, false);
+  assert.equal(result.alerted, true, 'БЮДЖЕТ-ДОСТАВКИ: заявка осталась без алерта «Лид не доставлен»');
+  const alert = f.calls.find((c) => c.body.chat_id === TECH_CHAT);
+  assert.ok(String(alert?.body.text ?? '').includes('40 с'), 'в алерте нет причины — сколько просил подождать Telegram');
+});
+
+test('повторы: retry_after посреди повторов — суммарный сон не выходит за бюджет, алерт уходит', async () => {
+  const f = fakeFetch([
+    { status: 429, payload: { ok: false, error_code: 429, description: 'Too Many Requests: retry after 40', parameters: { retry_after: 40 } } },
+    { status: 200, payload: { ok: true } },
+  ]);
+  const s = fakeSleep();
+
+  const result = await deliverWithRetries({
+    token: TOKEN,
+    chatId: CHAT,
+    text: TEXT,
+    fetchImpl: f.impl,
+    sleep: s.sleep,
+    alert: { chatId: TECH_CHAT, leadKey: LEAD_KEY },
+  });
+
+  const slept = s.waited.reduce((sum, ms) => sum + ms, 0);
+  assert.ok(slept <= DELIVERY_BUDGET_MS, `БЮДЖЕТ-ДОСТАВКИ: суммарный сон ${String(slept)} мс больше бюджета`);
+  assert.equal(result.alerted, true, 'БЮДЖЕТ-ДОСТАВКИ: заявка осталась без алерта «Лид не доставлен»');
+  assert.equal(result.attempts, 1, 'после 429 с долгим retry_after повторять внутри бюджета нечем');
 });
 
 test('повторы: упавший алерт не роняет доставку — иначе падает весь waitUntil', async () => {

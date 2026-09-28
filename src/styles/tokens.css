@@ -239,6 +239,11 @@ video {
   -webkit-user-select: none;
 }
 
+img {
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--gold-light);
   outline-offset: 2px;
@@ -347,8 +352,10 @@ video {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: .01ms !important;
+    animation-delay: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+    transition-delay: .01ms !important;
     scroll-behavior: auto !important;
   }
 }

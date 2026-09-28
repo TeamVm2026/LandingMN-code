@@ -131,11 +131,12 @@ for (const width of [390, 1440] as const) {
       'у дымки первого экрана пропал data-crosses-fold — её 17,9 КБ снова станут ' +
         'невидимы для check:perf, и честная сумма первого экрана начнёт врать',
     ).toBe('true');
+
     expect(
       haze?.loading,
-      'дымка перестала быть lazy — она обязана уступать очередь фотографии первого экрана ' +
-        '(fetchpriority="high"), иначе LCP растёт',
-    ).toBe('lazy');
+      'дымка снова lazy — она LCP-элемент страницы, и её запрос обязан быть ' +
+        'обнаруживаемым в разметке (два режима LCP в CI 25.09.2026)',
+    ).toBe('eager');
 
     const retired = await page.evaluate(
       (sels) => sels.filter((s) => document.querySelector(s) !== null),

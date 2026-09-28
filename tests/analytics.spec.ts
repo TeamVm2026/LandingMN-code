@@ -6,7 +6,7 @@ import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { PAGE_ROUTES, type Locale } from '../src/i18n/routes';
-import { createBus } from '../src/scripts/analytics/bus';
+import { createBus, QUEUE_CAP } from '../src/scripts/analytics/bus';
 import { EVENT_NAMES, PROVIDER_OWNED_EVENTS, type EventName } from '../src/scripts/analytics/events';
 import { isOffCloudflareNoise } from './lib/console-noise';
 
@@ -271,6 +271,80 @@ test.describe('живая страница: искусственный приё�
     expect(event.params.error_type).toBe('validation');
 
     expect(event.params.field).toBe('direction');
+  });
+
+  test('набор и стирание текста в поле НЕ дают form_error до нажатия кнопки', async ({ page }) => {
+    await page.goto('/?__sink=1');
+
+    await expect(page.locator('#lead-contact')).toHaveJSProperty('inputMode', 'tel');
+
+    const name = page.locator('#lead-name');
+    await name.focus();
+
+    await name.fill(' ');
+
+    await name.fill('Бат');
+    await name.fill('');
+
+    await page.locator('#lead-contact').focus();
+    await page.waitForTimeout(300);
+
+    const early = (await events(page)).filter((e) => e.name === 'form_error');
+    expect(
+      early.map((e) => e.params.field),
+      'form_error ушёл при НАБОРЕ текста — попытки отправки не было ни одной',
+    ).toEqual([]);
+
+    await expect(
+      page.locator('.field.has-error'),
+      'красная ошибка показана до единого нажатия кнопки',
+    ).toHaveCount(0);
+
+    await page.locator('.lead-form__submit').click();
+    const event = await waitForEvent(page, 'form_error');
+    expect(event.params.error_type).toBe('validation');
+  });
+
+  test('?__sink=0 выключает приёмник, поставленный ?__sink=1, и снимает флаг', async ({ page }) => {
+    await page.goto('/?__sink=1');
+    await expect
+      .poll(async () => page.evaluate(() => Array.isArray((window as { __lmnEvents?: unknown[] }).__lmnEvents)))
+      .toBe(true);
+
+    await page.goto('/?__sink=0');
+    await expect(page.locator('#lead-contact')).toHaveJSProperty('inputMode', 'tel');
+    expect(
+      await page.evaluate(() => (window as { __lmnEvents?: unknown[] }).__lmnEvents === undefined),
+      'приёмник остался подписан после ?__sink=0',
+    ).toBe(true);
+    expect(
+      await page.evaluate(() => (window as { __lmnEmit?: unknown }).__lmnEmit === undefined),
+      'обёртка подделки макро-конверсии осталась открытой после ?__sink=0',
+    ).toBe(true);
+
+    expect(await page.evaluate(() => sessionStorage.getItem('lmn_sink'))).toBeNull();
+    await page.goto('/');
+    await expect(page.locator('#lead-contact')).toHaveJSProperty('inputMode', 'tel');
+    expect(
+      await page.evaluate(() => (window as { __lmnEvents?: unknown[] }).__lmnEvents === undefined),
+    ).toBe(true);
+  });
+
+  test('журнал приёмника не растёт без предела: потолок тот же, что у очереди шины', async ({ page }) => {
+    await page.goto('/?__sink=1');
+    await expect
+      .poll(async () => page.evaluate(() => typeof (window as { __lmnEmit?: { formSubmit?: unknown } }).__lmnEmit?.formSubmit))
+      .toBe('function');
+
+    await page.evaluate((n) => {
+      const emit = (window as { __lmnEmit?: { formSubmit: (d: string, c: string) => void } }).__lmnEmit!;
+      for (let i = 0; i < n + 20; i += 1) emit.formSubmit('bank', 'telegram');
+    }, QUEUE_CAP);
+
+    expect(
+      await page.evaluate(() => (window as { __lmnEvents?: unknown[] }).__lmnEvents!.length),
+      'журнал искусственного приёмника растёт без потолка',
+    ).toBe(QUEUE_CAP);
   });
 
   test('form_submit существует в коде и вызывается через отладочную обёртку', async ({ page }) => {
@@ -577,6 +651,8 @@ test.describe('провайдеры при ЗАДАННЫХ идентифика
     expect(configArgs[1]).toBe(FAKE_GA_ID);
     expect(configArgs[2] as Record<string, unknown>).not.toHaveProperty('send_page_view');
     expect((configArgs[2] as Record<string, unknown>).allow_google_signals).toBe(false);
+
+    expect((configArgs[2] as Record<string, unknown>).traffic_type).toBe('internal');
 
     expect(await dataLayerEvents(page)).not.toContain('page_view');
   });

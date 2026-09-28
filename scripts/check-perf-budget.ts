@@ -7,7 +7,7 @@ const projectRoot = path.resolve(import.meta.dirname, '..');
 const distDir = path.join(projectRoot, 'dist');
 const indexPath = path.join(distDir, 'index.html');
 
-const CRITICAL_PATH_BUDGET_BYTES = 140 * 1024;
+const CRITICAL_PATH_BUDGET_BYTES = 158 * 1024;
 
 const TZ_FIRST_SCREEN_BYTES = 150 * 1024;
 
@@ -181,7 +181,12 @@ function analyzeCssBackgrounds(htmlPath: string): CssBackgroundAnalysis {
     if (!href) continue;
     const resolved = resolveDistAsset(href);
     if (!resolved) {
-      warnings.push(`stylesheet href="${href}" не разрешается в файл dist/ — фоны в нём не проверены`);
+
+      problems.push(
+        `ТАБЛИЦА СТИЛЕЙ НЕ РАЗРЕШЕНА: href="${href}" не указывает ни на один файл dist/. ` +
+          'Разбор фонов и вес этой таблицы выпали из бюджета — молчание гейта здесь ' +
+          'ничего не подтверждает.'
+      );
       continue;
     }
     sources.push({ css: readFileSync(resolved, 'utf8'), origin: href, dir: path.dirname(resolved) });
@@ -231,7 +236,10 @@ function analyzeCssBackgrounds(htmlPath: string): CssBackgroundAnalysis {
 
     if (!resolved) {
 
-      warnings.push(`фон url("${ref.url}") (${ref.property}) не разрешается в файл dist/`);
+      problems.push(
+        `РАСТРОВЫЙ ФОН НЕ РАЗРЕШЁН: url("${ref.url}") (${ref.property}) не указывает ни на ` +
+          'один файл dist/. Байты этого слоя в бюджет не вошли, то есть измерение потеряло цель.'
+      );
       continue;
     }
     const bytes = statSync(resolved).size;

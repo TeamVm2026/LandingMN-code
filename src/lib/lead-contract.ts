@@ -27,6 +27,11 @@ export type Direction = (typeof DIRECTIONS)[number];
 
 export const LOCALES = ['mn', 'ru', 'en'] as const satisfies readonly Locale[];
 
+type MissingLocale = Exclude<Locale, (typeof LOCALES)[number]>;
+
+const _ALL_LOCALES_LISTED: [MissingLocale] extends [never] ? true : never = true;
+void _ALL_LOCALES_LISTED;
+
 export const DEFAULT_LOCALE: Locale = 'mn';
 
 export const ERROR_CODES = {

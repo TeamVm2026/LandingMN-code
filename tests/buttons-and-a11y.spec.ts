@@ -1,6 +1,7 @@
 
 import { test, expect } from '@playwright/test';
 import { PAGE_ROUTES, type Locale } from '../src/i18n/routes';
+import { waitSettled } from './lib/settle.ts';
 import sharp from 'sharp';
 
 const LOCALES: Locale[] = ['mn', 'ru', 'en'];
@@ -309,6 +310,8 @@ test.describe('Кнопки — один материал и настоящее 
 
   test('нажатие уменьшает кнопку и отпускает её обратно', async ({ page }) => {
     await page.goto(PAGE_ROUTES.home.ru);
+
+    await waitSettled(page);
     const button = page.locator('.contact-btn--telegram').first();
     const box = (await button.boundingBox())!;
 
@@ -322,7 +325,14 @@ test.describe('Кнопки — один материал и настоящее 
 
     expect(await scaleOf()).toBeCloseTo(1, 2);
 
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const hit = await page.evaluate(
+      ([x, y]) => !!document.elementFromPoint(x, y)?.closest('.contact-btn--telegram'),
+      [cx, cy] as const,
+    );
+    expect(hit, 'точку нажатия перехватывает другой слой').toBe(true);
+    await page.mouse.move(cx, cy);
     await page.mouse.down();
     await page.waitForTimeout(160);
     const pressed = await scaleOf();

@@ -158,9 +158,60 @@ const directProviderCall: SabotageCase = {
   },
 };
 
+const undocumentedParam: SabotageCase = {
+  id: 'analytics-undocumented-param',
+  gate: 'check:analytics-events',
+  describe: 'в track() существующего события добавлен параметр, которого нет в таблице документа',
+  setup() {
+    const srcCopy = copySrcTree(this.id);
+    addCodeLine(srcCopy, "track('form_open', { placement: 'form', amount_hint: 'big' });");
+  },
+  get command() {
+    return [
+      '--experimental-strip-types',
+      'scripts/check-analytics-events.ts',
+      '--src',
+      argPath(path.join(tmpDir, `${this.id}-src`)),
+    ];
+  },
+  expectOutputContains: 'ПАРАМЕТР БЕЗ ДОКУМЕНТАЦИИ',
+  greenRun: GREEN,
+  teardown() {
+    cleanup(this.id);
+  },
+};
+
+const paramDocumentedNotSent: SabotageCase = {
+  id: 'analytics-param-documented-not-sent',
+  gate: 'check:analytics-events',
+  describe: 'в таблицу документа вписан параметр, которого не шлёт ни один вызов track()',
+  setup() {
+    const docCopy = copyDoc(this.id);
+    addDocRow(
+      docCopy,
+      '| `form_open` | та же ступень, вторая строка таблицы | `obeschannyj_no_ne_otpravlyaemyj` | — | — |',
+    );
+  },
+  get command() {
+    return [
+      '--experimental-strip-types',
+      'scripts/check-analytics-events.ts',
+      '--doc',
+      argPath(path.join(tmpDir, `${this.id}-doc.md`)),
+    ];
+  },
+  expectOutputContains: 'ПАРАМЕТР НЕ ОТПРАВЛЯЕТСЯ',
+  greenRun: GREEN,
+  teardown() {
+    cleanup(this.id);
+  },
+};
+
 export const cases: SabotageCase[] = [
   undocumentedEvent,
   documentedButMissing,
   nameOverGa4Limit,
   directProviderCall,
+  undocumentedParam,
+  paramDocumentedNotSent,
 ];

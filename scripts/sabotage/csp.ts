@@ -22,6 +22,8 @@ const GREEN: GreenRun = {
 
 const FOREIGN_ORIGIN = 'https://evil.example.com';
 
+const COMPANION_PROBE = 'https://scripts.clarity.ms';
+
 function neededFiles(dir: string, prefix = ''): string[] {
   const found: string[] = [];
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -119,4 +121,37 @@ const enforceTooEarly: SabotageCase = {
   },
 };
 
-export const cases: SabotageCase[] = [foreignOrigin, enforceTooEarly];
+const companionMissing: SabotageCase = {
+  id: 'csp-companion-missing-from-header',
+  gate: 'check:csp',
+  describe:
+    `из _headers пропал спутник ${COMPANION_PROBE}, объявленный в COMPANION_SOURCES — ` +
+    'то есть политика разошлась со списком, и в enforce умирает то, ради чего спутник заведён',
+
+  setup() {
+    prepareCleanCopy();
+
+    const target = path.join(copyDir, '_headers');
+    const original = readFileSync(target, 'utf8');
+
+    const broken = original.replace(` ${COMPANION_PROBE}`, '');
+    if (broken === original) {
+      throw new Error(
+        `подстановка в _headers ничего не изменила — искали « ${COMPANION_PROBE}»; ` +
+          'либо спутник переименован, либо политику в копию не дописало пост-сборочное звено',
+      );
+    }
+    writeFileSync(target, broken, 'utf8');
+  },
+
+  command: GATE_ARGV,
+
+  expectOutputContains: `${COMPANION_PROBE} объявлен спутником для script-src`,
+  greenRun: GREEN,
+
+  teardown() {
+    rmSync(copyDir, { recursive: true, force: true });
+  },
+};
+
+export const cases: SabotageCase[] = [foreignOrigin, enforceTooEarly, companionMissing];

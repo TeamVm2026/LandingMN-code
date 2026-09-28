@@ -22,6 +22,26 @@ import { regionOnce } from './analytics/region';
 
 mountRepeatPanel();
 
+function freezeHeroHeight(): void {
+  if (window.matchMedia('(pointer: fine)').matches) return;
+  const root = document.documentElement;
+  let lastWidth = -1;
+  const measure = (): void => {
+    if (window.innerWidth === lastWidth) return;
+    lastWidth = window.innerWidth;
+    const probe = document.createElement('div');
+    probe.style.cssText =
+      'position:fixed;top:0;left:0;width:0;height:100svh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    const h = probe.getBoundingClientRect().height;
+    probe.remove();
+    if (h > 0) root.style.setProperty('--hero-vh', `${Math.round(h)}px`);
+  };
+  measure();
+  window.addEventListener('resize', measure, { passive: true });
+}
+freezeHeroHeight();
+
 installClientErrorReporter();
 
 {
@@ -98,9 +118,11 @@ installClientErrorReporter();
   const tishe = window.matchMedia('(prefers-reduced-motion: reduce)');
   let idyot: number | null = null;
 
+  const root = document.documentElement;
   const stop = (): void => {
     if (idyot !== null) cancelAnimationFrame(idyot);
     idyot = null;
+    root.style.scrollBehavior = '';
     window.removeEventListener('wheel', stop);
     window.removeEventListener('touchstart', stop);
     window.removeEventListener('keydown', stop);
@@ -118,6 +140,7 @@ installClientErrorReporter();
     }
 
     stop();
+    root.style.scrollBehavior = 'auto';
 
     window.addEventListener('wheel', stop, { passive: true, once: true });
     window.addEventListener('touchstart', stop, { passive: true, once: true });
@@ -353,11 +376,11 @@ function showFieldError(field: HTMLElement, text: string): void {
     for (const eventName of ['input', 'change'] as const) {
       form.addEventListener(eventName, (event) => {
         const field = event.target as HTMLInputElement;
-        if (typeof field.checkValidity === 'function' && field.checkValidity()) {
-          clearError(field);
-        }
+        if (field.validity?.valid) clearError(field);
       });
     }
+
+    form.dataset.leadFormReady = '1';
   }
 }
 
@@ -414,7 +437,7 @@ document.addEventListener(
       channel: el.dataset.trackChannel,
       placement: el.dataset.trackPlacement,
 
-      direction: el.dataset.program || 'none',
+      direction: 'none',
       start_payload: startPayloadOf(el),
     });
   },

@@ -300,6 +300,8 @@ test.describe('Цифры первого экрана (Д-08): видны, из 
         await page.setViewportSize(size);
         await page.goto(PAGE_ROUTES.home[locale]);
 
+        await page.evaluate(() => document.fonts.ready);
+
         const stats = page.locator('.hero-stats .hero-stat');
         await expect(stats).toHaveCount(2);
 
@@ -882,15 +884,16 @@ test.describe('Второй разбор 28.08.2026: восемь пунктов
 
         return nums && nums.length >= 6 ? Number(nums[2]) : 0;
       };
-      return { h1: skew('.hero-h1'), logo: skew('.site-header__logo, .header-logo, .site-header a svg') };
+
+      return { h1: skew('.hero-h1'), logo: skew('.brand') };
     });
     expect(t.h1, 'заголовок первого экрана не найден').not.toBeNull();
     const h1Skew = t.h1 as number;
     expect(h1Skew, 'заголовок первого экрана на десктопе снова прямой').not.toBe(0);
 
-    if (t.logo !== null && t.logo !== 0) {
-      expect(h1Skew, 'угол заголовка не совпал с углом логотипа').toBeCloseTo(t.logo, 2);
-    }
+    expect(t.logo, 'знак MELBET (.brand) в шапке не найден').not.toBeNull();
+    expect(t.logo, 'знак MELBET на десктопе снова прямой').not.toBe(0);
+    expect(h1Skew, 'угол заголовка не совпал с углом логотипа').toBeCloseTo(t.logo as number, 2);
   });
 
   test('кольцо фокуса не появляется от нажатия, но появляется с клавиатуры', async ({ page }) => {
@@ -1134,7 +1137,10 @@ test.describe('Регистр подписей под цифрами: загла
         readFileSync(path.join(projectRoot, 'src', 'i18n', `${locale}.json`), 'utf-8'),
       );
       for (const key of ['stat_partners', 'stat_share'] as const) {
-        const label = dict.hero[key].label as string;
+
+        const label = [dict.hero[key].lead as string, dict.hero[key].label as string]
+          .filter((s) => s && s.trim())
+          .join(' ');
         const words = casedWords(label);
 
         expect(label.trim().length, `hero.${key}.label пуст в ${locale}`).toBeGreaterThan(0);
@@ -1187,15 +1193,16 @@ test.describe('Регистр подписей под цифрами: загла
     });
   }
 
-  const EXPECTED_LINES: Record<Locale, [number, number]> = {
-    mn: [2, 2],
+  const EXPECTED_LINES: Record<Locale, [number | number[], number]> = {
+    mn: [1, 1],
     ru: [2, 2],
     en: [1, 2],
   };
 
   for (const width of [360, 390, 430]) {
     for (const locale of LOCALES) {
-      test(`${width} (${locale}): подписи занимают ${EXPECTED_LINES[locale].join(' и ')} строк(и)`, async ({
+      const label = EXPECTED_LINES[locale].map((n) => (Array.isArray(n) ? n.join(' или ') : String(n))).join(' и ');
+      test(`${width} (${locale}): подписи занимают ${label} строк(и)`, async ({
         page,
       }) => {
         await page.setViewportSize({ width, height: 844 });
@@ -1233,7 +1240,11 @@ test.describe('Регистр подписей под цифрами: загла
           `число строк подписей на ${width} (${locale}); Manrope применён=${String(probe.manropeApplied)}, ` +
             `коробки ${probe.boxes.map((b) => String(b.width) + 'px').join(' и ')}, ` +
             `семейство ${probe.boxes[0]?.family ?? '?'}`,
-        ).toEqual(EXPECTED_LINES[locale]);
+        ).toHaveLength(2);
+        for (const [i, want] of EXPECTED_LINES[locale].entries()) {
+          const ok = Array.isArray(want) ? want.includes(lines[i]) : lines[i] === want;
+          expect(ok, `подпись ${i + 1} на ${width} (${locale}): ${lines[i]} строк(и) при ожидании ${JSON.stringify(want)}`).toBe(true);
+        }
       });
     }
   }

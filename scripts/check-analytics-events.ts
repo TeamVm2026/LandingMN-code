@@ -100,8 +100,71 @@ const declaredEvents = new Set(eventsModule.EVENT_NAMES);
 const providerOwned = new Set(eventsModule.PROVIDER_OWNED_EVENTS);
 
 const TRACK_CALL = /\btrack\(\s*['"]([^'"]+)['"]/g;
-const TRACK_PARAMS = /\btrack\(\s*['"][^'"]+['"]\s*,\s*\{([\s\S]*?)\}\s*\)/g;
-const PARAM_KEY = /(^|[\s,{])([A-Za-z_$][\w$]*)\s*:/g;
+
+const TRACK_PARAMS_HEAD = /\btrack\(\s*['"][^'"]+['"]\s*,\s*\{/g;
+
+function objectBody(text: string, openBrace: number): string | null {
+  let depth = 0;
+  let quote: string | null = null;
+  for (let i = openBrace; i < text.length; i++) {
+    const ch = text[i];
+    if (quote !== null) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') quote = ch;
+    else if (ch === '{' || ch === '(' || ch === '[') depth++;
+    else if (ch === '}' || ch === ')' || ch === ']') {
+      depth--;
+      if (depth === 0) return text.slice(openBrace + 1, i);
+    }
+  }
+  return null;
+}
+
+function objectKeys(body: string): string[] {
+  const keys: string[] = [];
+  let depth = 0;
+  let quote: string | null = null;
+  let piece = '';
+  let beforeColon: string | null = null;
+
+  const flush = (): void => {
+    const name = (beforeColon ?? piece).trim();
+    piece = '';
+    beforeColon = null;
+
+    if (/^[A-Za-z_$][\w$]*$/.test(name)) keys.push(name);
+  };
+
+  for (let i = 0; i < body.length; i++) {
+    const ch = body[i];
+    if (quote !== null) {
+      if (ch === '\\') i++;
+      else if (ch === quote) quote = null;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      quote = ch;
+      continue;
+    }
+    if (ch === '{' || ch === '(' || ch === '[') depth++;
+    else if (ch === '}' || ch === ')' || ch === ']') depth--;
+    else if (depth === 0 && ch === ':' && beforeColon === null) {
+
+      beforeColon = piece;
+      piece = '';
+      continue;
+    } else if (depth === 0 && ch === ',') {
+      flush();
+      continue;
+    }
+    piece += ch;
+  }
+  flush();
+  return keys;
+}
 
 const eventsInCode = new Map<string, string[]>();
 const paramsInCode = new Map<string, string[]>();
@@ -116,9 +179,11 @@ for (const file of sourceFiles) {
     eventsInCode.set(name, where);
   }
 
-  for (const match of text.matchAll(TRACK_PARAMS)) {
-    for (const key of match[1].matchAll(PARAM_KEY)) {
-      const param = key[2];
+  for (const match of text.matchAll(TRACK_PARAMS_HEAD)) {
+    const openBrace = match.index + match[0].length - 1;
+    const body = objectBody(text, openBrace);
+    if (body === null) continue;
+    for (const param of objectKeys(body)) {
       const where = paramsInCode.get(param) ?? [];
       if (!where.includes(rel(file))) where.push(rel(file));
       paramsInCode.set(param, where);
@@ -197,6 +262,28 @@ for (const name of documentedEvents) {
   }
 }
 
+for (const [name, files] of paramsInCode) {
+  if (!documentedParams.has(name)) {
+    fail(
+      'ПАРАМЕТР БЕЗ ДОКУМЕНТАЦИИ',
+      `«${name}» отправляется из ${files.join(', ')}, но ни в одной строке таблицы ${docPath} его нет.\n` +
+        '      GA4 не заводит custom dimension сам: незарегистрированный параметр доезжает,\n' +
+        '      но в отчётах его нет, и документ, по которому настраивают кабинет, о нём молчит.',
+    );
+  }
+}
+
+for (const name of documentedParams) {
+  if (!paramsInCode.has(name)) {
+    fail(
+      'ПАРАМЕТР НЕ ОТПРАВЛЯЕТСЯ',
+      `«${name}» описан в таблице ${docPath}, но ни один вызов track() в ${srcDir}/ его не шлёт.\n` +
+        '      Документ, обещающий несуществующий параметр, — молчаливый обман, а не опечатка:\n' +
+        '      колонку под него заведут в кабинете и будут ждать цифру, которой не будет.',
+    );
+  }
+}
+
 for (const name of new Set([...documentedEvents, ...eventsInCode.keys()])) {
   if (name.length > GA4_NAME_MAX) {
     fail(
@@ -238,7 +325,14 @@ for (const file of sourceFiles) {
 console.log(`--- Гейт слоя событий (${srcDir}/ ↔ ${docPath}) ---`);
 console.log(`  событий в коде:        ${eventsInCode.size} (${[...eventsInCode.keys()].sort().join(', ')})`);
 console.log(`  событий в документе:   ${documentedEvents.size}, из них шлёт провайдер: ${[...documentedEvents].filter((n) => providerOwned.has(n)).join(', ') || '(нет)'}`);
-console.log(`  параметров сверено:    ${new Set([...documentedParams, ...paramsInCode.keys()]).size} (лимит имени ${GA4_NAME_MAX})`);
+
+console.log(
+  `  параметров в коде:     ${paramsInCode.size} (${[...paramsInCode.keys()].sort().join(', ')})`,
+);
+console.log(
+  `  параметров в документе: ${documentedParams.size}; сверено в обе стороны: ` +
+    `${new Set([...documentedParams, ...paramsInCode.keys()]).size} (лимит имени ${GA4_NAME_MAX})`,
+);
 console.log(`  файлов просмотрено:    ${sourceFiles.length}, прямых обращений к провайдеру: ${providerHits}`);
 
 if (failures.length > 0) {

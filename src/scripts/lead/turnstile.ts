@@ -7,7 +7,7 @@ const API_JS_URL = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render
 interface TurnstileRenderParams {
   sitekey: string;
   appearance: 'interaction-only';
-  size: 'flexible' | 'compact';
+  size: 'flexible';
   language: TurnstileLanguage;
   theme: 'dark';
   'response-field-name': string;
@@ -37,6 +37,26 @@ function widgetLanguage(): TurnstileLanguage {
   return document.documentElement.lang === 'ru' ? 'ru' : 'en';
 }
 
+const FLEXIBLE_MIN_WIDTH = 300;
+
+function fitWidget(container: HTMLElement, mount: HTMLElement): void {
+  const width = container.clientWidth;
+  if (width > 0 && width < FLEXIBLE_MIN_WIDTH) {
+    const scale = width / FLEXIBLE_MIN_WIDTH;
+
+    const height = mount.offsetHeight;
+    mount.style.width = `${FLEXIBLE_MIN_WIDTH}px`;
+    mount.style.transformOrigin = '0 0';
+    mount.style.transform = `scale(${scale})`;
+    mount.style.marginBottom = height > 0 ? `${(scale - 1) * height}px` : '';
+  } else {
+    mount.style.width = '';
+    mount.style.transformOrigin = '';
+    mount.style.transform = '';
+    mount.style.marginBottom = '';
+  }
+}
+
 export function ensureTurnstile(): void {
 
   if (!TURNSTILE_ENABLED) return;
@@ -55,13 +75,23 @@ export function ensureTurnstile(): void {
 
     if (!api) return;
 
-    widgetId = api.render(container, {
+    const mount = document.createElement('div');
+    container.appendChild(mount);
+    fitWidget(container, mount);
+
+    if (typeof ResizeObserver === 'function') {
+      const refit = new ResizeObserver(() => fitWidget(container, mount));
+      refit.observe(container);
+      refit.observe(mount);
+    }
+
+    widgetId = api.render(mount, {
 
       sitekey: config.turnstileSitekey,
 
       appearance: 'interaction-only',
 
-      size: container.clientWidth >= 300 ? 'flexible' : 'compact',
+      size: 'flexible',
 
       language: widgetLanguage(),
 

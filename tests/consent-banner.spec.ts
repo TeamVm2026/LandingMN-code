@@ -640,6 +640,7 @@ test.describe('запрос согласия: регион, показ, реше
 
       const stackPx = MOBILE_VIEWPORT.height - bannerBox.y;
       const stackPct = stackPx / MOBILE_VIEWPORT.height;
+      console.log(`[замер] 9 ${locale}: баннер ${bannerBox.height.toFixed(2)}px, нижняя конструкция ${(stackPct * 100).toFixed(1)}%`);
       expect(
         stackPct,
         `нижняя конструкция ${stackPx.toFixed(2)}px = ${(stackPct * 100).toFixed(1)}% окна ` +
@@ -670,6 +671,43 @@ test.describe('запрос согласия: регион, показ, реше
         pinnedVsego.length,
         'прибитого на странице нет вовсе — прибор слеп, проверка ниже ничего не значит',
       ).toBeGreaterThan(0);
+    });
+  }
+
+  for (const locale of LOCALES) {
+    test(`9б. телефон 360×800 (${locale}): баннер укладывается в порог нижней конструкции`, async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({
+        viewport: NARROW_VIEWPORT,
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+      });
+      const page = await context.newPage();
+      await stubProviders(page);
+      await fakeRegion(page, 'DE');
+      await page.goto(`${origin}${PAGE_ROUTES.home[locale]}`);
+
+      const banner = page.locator(BANNER);
+      await expect(banner).toHaveClass(/is-open/, { timeout: 15_000 });
+      await page.evaluate(() => document.fonts.ready);
+      const bannerBox = await stableBox(banner);
+
+      const stackPx = NARROW_VIEWPORT.height - bannerBox.y;
+      const stackPct = stackPx / NARROW_VIEWPORT.height;
+      console.log(`[замер] 9б ${locale}: баннер ${bannerBox.height.toFixed(2)}px, нижняя конструкция ${(stackPct * 100).toFixed(1)}%`);
+      expect(bannerBox.height, 'баннер нулевой высоты — мерить нечего').toBeGreaterThan(0);
+      expect(
+        bannerBox.y + bannerBox.height,
+        'баннер не стоит у нижней кромки окна',
+      ).toBeGreaterThanOrEqual(NARROW_VIEWPORT.height - 1);
+      expect(
+        stackPct,
+        `нижняя конструкция ${stackPx.toFixed(2)}px = ${(stackPct * 100).toFixed(1)}% окна ` +
+          `${NARROW_VIEWPORT.height} при пороге ${(BOTTOM_STACK_BUDGET * 100).toFixed(0)}%`,
+      ).toBeLessThanOrEqual(BOTTOM_STACK_BUDGET);
+      await context.close();
     });
   }
 

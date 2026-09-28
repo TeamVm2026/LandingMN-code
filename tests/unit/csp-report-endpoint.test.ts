@@ -17,7 +17,7 @@ const TECH_CHAT = '-1000000000001';
 
 const MANAGER_CHAT = '-1000000000000';
 
-const API_BASE = 'https://telegram.invalid';
+const API_BASE = 'http://127.0.0.1:9099';
 const ENDPOINT = 'https://landingmn.pages.dev/api/csp-report';
 
 function legacyBody(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -534,4 +534,37 @@ test('CSP-РЕЖИМ: disposition печатается — переключен�
 
   assert.match(h.sent()[0].text ?? '', /enforce/, 'режим доставки виден в сообщении');
   assertNeverManagerChat(h);
+});
+
+test('TG_API_BASE с чужим хостом игнорируется — токен бота туда не уходит', async (t) => {
+  const h = createHarness({ env: { TG_API_BASE: 'https://evil.example' } });
+  t.after(() => h.restore());
+
+  await h.post(legacyBody());
+  await h.settle();
+
+  assert.equal(h.fetchCalls.length, 1, 'отчёт не должен теряться из-за переменной');
+  const url = h.fetchCalls[0]?.url ?? '';
+  assert.ok(
+    !url.includes('evil.example'),
+    `ТОКЕН-НА-ЧУЖОЙ-ХОСТ: адрес ${url} собран из непроверенной переменной`,
+  );
+  assert.ok(
+    url.startsWith('https://api.telegram.org/bot'),
+    'при неразрешённом хосте обязан быть откат на настоящий API, а не отказ доставки',
+  );
+  assertNeverManagerChat(h);
+});
+
+test('TG_API_BASE с разрешённым хостом по-прежнему действует', async (t) => {
+  const h = createHarness();
+  t.after(() => h.restore());
+
+  await h.post(legacyBody());
+  await h.settle();
+
+  assert.ok(
+    h.fetchCalls[0]?.url.startsWith(`${API_BASE}/bot`),
+    'подмена адреса для тестовых драйверов обязана работать',
+  );
 });

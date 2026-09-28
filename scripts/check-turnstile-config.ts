@@ -1,10 +1,9 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { PREVIEW_HOST_PATTERN } from './lib/preview-host.ts';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
-
-const PREVIEW_HOST_PATTERN = /(^|\.)pages\.dev$|^localhost$|^127\.0\.0\.1$/;
 
 function readEnv(name: string): string {
   const fromProcess = process.env[name];

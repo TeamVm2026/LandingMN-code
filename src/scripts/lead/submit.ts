@@ -11,7 +11,7 @@ import {
 } from '../../lib/lead-contract';
 import { TURNSTILE_ENABLED } from '../../config';
 import { writeLeadState } from './state.ts';
-import { revealBelowSticky } from './reveal.ts';
+import { revealFully } from './reveal.ts';
 import type { Locale } from '../../i18n/routes';
 
 const TIMEOUT_MS = 10000;
@@ -190,7 +190,7 @@ export function mountLeadSubmit(wiring: LeadSubmitWiring): void {
       }
     }
 
-    revealBelowSticky(status);
+    revealFully(status);
 
     try {
       wiring.emitError(shape.errorType, firstField);
@@ -225,6 +225,12 @@ export function mountLeadSubmit(wiring: LeadSubmitWiring): void {
 
     void (async () => {
       let response: Response;
+
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => {
+        controller.abort();
+      }, TIMEOUT_MS);
+
       try {
         response = await fetch(ENDPOINT, {
           method: 'POST',
@@ -232,12 +238,15 @@ export function mountLeadSubmit(wiring: LeadSubmitWiring): void {
           headers: { Accept: 'application/json' },
 
           body: bodyOf(form),
-          signal: AbortSignal.timeout(TIMEOUT_MS),
+          signal: controller.signal,
         });
       } catch {
 
         showFailure(NETWORK_FAILURE, []);
         return;
+      } finally {
+
+        window.clearTimeout(timer);
       }
 
       if (response.ok) {
@@ -281,10 +290,9 @@ export function mountLeadSubmit(wiring: LeadSubmitWiring): void {
         /* */
       }
 
-      const shape =
-        code !== undefined && code in FAILURE_BY_CODE
-          ? FAILURE_BY_CODE[code as ErrorCode]
-          : NETWORK_FAILURE;
+      const known =
+        code !== undefined && Object.prototype.hasOwnProperty.call(FAILURE_BY_CODE, code);
+      const shape = known ? FAILURE_BY_CODE[code as ErrorCode] : NETWORK_FAILURE;
 
       showFailure(shape, fields);
 

@@ -1,9 +1,21 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = fileURLToPath(new URL('..', import.meta.url));
+function argValue(name: string, fallback: string): string {
+  const argv = process.argv.slice(2);
+  const i = argv.indexOf(`--${name}`);
+  if (i === -1) return fallback;
+  const value = argv[i + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`FAIL: у аргумента --${name} нет значения`);
+    process.exit(1);
+  }
+  return value;
+}
+
+const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)), argValue('root', '.'));
 const TOKENS_FILE = join(ROOT, 'src', 'styles', 'tokens.css');
 const SCAN_DIRS = ['src', 'functions'];
 const EXTENSIONS = ['.astro', '.css', '.ts', '.tsx', '.js', '.mjs', '.html'];

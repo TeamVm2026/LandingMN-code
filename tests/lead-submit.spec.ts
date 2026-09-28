@@ -238,7 +238,8 @@ async function placeWhereTargetFitsViewport(
         for (const y of [natural - step, natural + step]) {
           if (y < min || y > max || tried.has(y)) continue;
           tried.add(y);
-          window.scrollTo(0, y);
+
+          window.scrollTo({ top: y, behavior: 'instant' as ScrollBehavior });
           await settle();
           if (holds()) {
             return {
@@ -1165,5 +1166,155 @@ test.describe('Успех на месте', () => {
     expect(state, 'на запасном пути состояние заявки не записано').toBeTruthy();
     expect(state?.v).toBe(1);
     expect(state?.direction).toBe('bank');
+  });
+});
+
+test.describe('Планка браузера у отправки заявки (A-02)', () => {
+
+  test('без AbortSignal.timeout заявка всё равно уходит и подтверждается', async ({ page }) => {
+    await page.addInitScript(() => {
+      delete (AbortSignal as unknown as { timeout?: unknown }).timeout;
+    });
+
+    const lead = await interceptLead(page);
+    lead.reply(json(200, { ok: true }));
+
+    await openForm(page, 'mn');
+    expect(
+      await page.evaluate(() => typeof (AbortSignal as unknown as { timeout?: unknown }).timeout),
+      'подмена среды не доехала до страницы — тест проверял бы свежий Chromium',
+    ).toBe('undefined');
+
+    await fillValid(page);
+    await page.locator(SUBMIT).click();
+
+    await expect.poll(() => lead.seen.count, { timeout: 15_000 }).toBe(1);
+    await expect(page.locator(SUCCESS_PANEL)).toBeVisible({ timeout: 15_000 });
+  });
+});
+
+test.describe('Код отказа читается по СОБСТВЕННЫМ ключам таблицы (A-03)', () => {
+
+  for (const code of ['toString', '__proto__', 'constructor', 'hasOwnProperty']) {
+    test(`ответ {"error":"${code}"} обрабатывается как неизвестный код`, async ({ page }) => {
+      const lead = await interceptLead(page);
+      lead.reply(json(500, { ok: false, error: code }));
+
+      await openForm(page, 'mn', true);
+      await fillValid(page);
+      const data = await formData(page);
+
+      await page.locator(SUBMIT).click();
+      await expect.poll(() => lead.seen.count, { timeout: 15_000 }).toBe(1);
+
+      const notice = await waitForMessage(page, data.apiErrNetwork ?? '');
+
+      expect(notice.hasLink, 'у неизвестного кода пропал запасной выход в Telegram').toBe(true);
+      expect(notice.href).toBe(data.apiFallbackHref);
+
+      const event = await nextFormError(page, 0);
+      expect(event.params.error_type, 'error_type уехал в аналитику пустым').toBe('network');
+    });
+  }
+});
+
+test.describe('Резерв под липкую панель снят вместе с панелью (A-04)', () => {
+
+  test('вторая та же ошибка при видимом целиком сообщении не двигает прокрутку', async ({ page }) => {
+    await page.setViewportSize(NARROW);
+
+    const lead = await interceptLead(page);
+    lead.reply(json(500, { ok: false, error: ERROR_CODES.internalError }));
+
+    await openForm(page, 'mn');
+    await fillValid(page);
+    const data = await formData(page);
+
+    await page.locator(SUBMIT).click();
+    await waitForMessage(page, data.apiErrGeneric ?? '');
+    await scrollSettled(page);
+
+    const placed = await page.evaluate((sel) => {
+      const el = document.querySelector<HTMLElement>(sel)!;
+      const rect = el.getBoundingClientRect();
+      const want = window.scrollY + rect.bottom - (window.innerHeight - 60);
+
+      window.scrollTo({ top: Math.max(0, Math.round(want)), behavior: 'instant' as ScrollBehavior });
+      const after = el.getBoundingClientRect();
+      return {
+        top: after.top,
+        bottom: after.bottom,
+        viewport: window.innerHeight,
+      };
+    }, STATUS);
+    await scrollSettled(page);
+
+    const gap = placed.viewport - placed.bottom;
+    const usable = placed.top >= 0 && placed.bottom <= placed.viewport && gap > 0 && gap < 104;
+
+    if (!usable) {
+      console.log(
+        `[ПРОПУСК A-04] полоса опыта не достигнута: top=${placed.top}, ` +
+          `bottom=${placed.bottom}, окно=${placed.viewport}, зазор=${gap}`,
+      );
+    }
+    test.skip(
+      !usable,
+      'СООБЩЕНИЕ НЕ УДАЛОСЬ ПОСТАВИТЬ В ПОЛОСУ «видно целиком, снизу меньше 104px». ' +
+        'Тест не ослаблен и не сделан зелёным — он ПРОПУЩЕН, потому что вне этой ' +
+        'полосы обе редакции ведут себя одинаково и проверять нечего. Если это ' +
+        'повторяется, изменилась высота документа или положение блока формы.',
+    );
+
+    expect(
+      await activeElementInfo(page),
+      'фокус ушёл с кнопки — второе нажатие с клавиатуры невозможно',
+    ).toContain('lead-form__submit');
+
+    const before = await page.evaluate(() => Math.round(window.scrollY));
+
+    await page.keyboard.press('Enter');
+    await expect.poll(() => lead.seen.count, { timeout: 15_000 }).toBe(2);
+    await waitForMessage(page, data.apiErrGeneric ?? '');
+    await scrollSettled(page);
+
+    const after = await page.evaluate(() => Math.round(window.scrollY));
+    expect(
+      Math.abs(after - before),
+      `страница уехала на ${Math.abs(after - before)}px, освобождая место под липкую панель, ` +
+        'которой нет с 07.09.2026 (Д-42)',
+    ).toBeLessThanOrEqual(1);
+  });
+});
+
+test.describe('Адрес кнопки подтверждения проверяется по схеме (A-07)', () => {
+
+  test('javascript: в data-repeat-href не доезжает до кнопки подтверждения', async ({ page }) => {
+    const lead = await interceptLead(page);
+    lead.reply(json(200, { ok: true }));
+
+    await openForm(page, 'mn');
+    await fillValid(page);
+    await page.evaluate((sel) => {
+      document.querySelector<HTMLFormElement>(sel)!.dataset.repeatHref =
+        'javascript:window.__pwned=1';
+    }, FORM);
+
+    await page.locator(SUBMIT).click();
+    await expect.poll(() => lead.seen.count, { timeout: 15_000 }).toBe(1);
+
+    await expect(page.locator(SUCCESS_PANEL)).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(`${SUCCESS_PANEL} ${PANEL_TITLE}`)).toBeVisible();
+
+    const bad = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('a'))
+        .map((a) => a.getAttribute('href') ?? '')
+        .filter((href) => /^\s*javascript:/i.test(href)),
+    );
+    expect(bad, 'адрес с чужой схемой доехал до href живой ссылки').toEqual([]);
+    expect(
+      await page.evaluate(() => (window as { __pwned?: unknown }).__pwned),
+      'скрипт из адреса исполнился',
+    ).toBeUndefined();
   });
 });

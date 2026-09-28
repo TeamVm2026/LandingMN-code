@@ -1,5 +1,9 @@
 
-import { TELEGRAM_ATTEMPT_TIMEOUT_MS, sendMessage } from '../../src/server/lead/telegram.ts';
+import {
+  TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
+  sendMessage,
+} from '../../src/server/lead/telegram.ts';
 import type { FetchLike } from '../../src/server/lead/telegram.ts';
 import { hitIpLimit } from '../../src/server/report/store.ts';
 import type { ReportCache, ReportNamespace } from '../../src/server/report/store.ts';
@@ -236,7 +240,8 @@ export async function tellTechChat(
       chatId: techChat,
       text,
       fetchImpl: fetchOf(deps),
-      apiBase: env.TG_API_BASE,
+
+      apiBase: allowedApiBase(env.TG_API_BASE),
       timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
     });
     const body = asRecord(result.body);
@@ -280,10 +285,26 @@ export async function runUptimeCycle(
   const now = nowOf(deps);
   const prevState = await readUptimeState(kv);
   const probes = await runProbes(base, deps);
+
+  if (probes.length === 0) {
+    return { ran: false, reason: 'ни одной пробы не выполнено', ...silent };
+  }
+
   const decision = decideUptimeAlert({ probes, prevState, now });
   const state = nextUptimeState({ probes, prevState, now });
 
-  await writeStateIfChanged(kv, UPTIME_STATE_KEY, prevState, state);
+  const beforeDelivery: UptimeState =
+    decision === 'alert'
+      ? { ...state, alerted: prevState.alerted }
+      : decision === 'recovered'
+        ?
+
+          prevState
+        : state;
+
+  if (decision === 'silent') {
+    await writeStateIfChanged(kv, UPTIME_STATE_KEY, prevState, beforeDelivery);
+  }
 
   const snapshot = await readSnapshot(kv);
   const stale = snapshot === null || now - snapshot.at >= SNAPSHOT_MIN_INTERVAL_MS;
@@ -296,15 +317,20 @@ export async function runUptimeCycle(
   }
 
   let delivery: DeliveryOutcome | null = null;
+  let finalState = beforeDelivery;
   if (decision !== 'silent') {
     delivery = await tellTechChat(
       env,
       deps,
       buildUptimeAlert({ kind: decision, probes, state: decision === 'recovered' ? prevState : state, target: base, now }),
     );
+
+    const next = delivery.ok ? state : beforeDelivery;
+    const written = await writeStateIfChanged(kv, UPTIME_STATE_KEY, prevState, next);
+    finalState = written || JSON.stringify(prevState) === JSON.stringify(next) ? next : prevState;
   }
 
-  return { ran: true, reason: '', probes, decision, state, delivery };
+  return { ran: true, reason: '', probes, decision, state: finalState, delivery };
 }
 
 export async function countLeads(
@@ -370,9 +396,20 @@ export async function runNoLeadsCycle(
   };
   const decision = decideNoLeadsAlert(input);
   const state = nextNoLeadsState(input);
-  await writeStateIfChanged(kv, NO_LEADS_STATE_KEY, prevState, state);
+
+  const beforeDelivery: NoLeadsState =
+    decision === 'alert'
+      ? { ...state, alerted: prevState.alerted }
+      : decision === 'recovered'
+        ? prevState
+        : state;
+
+  if (decision === 'silent') {
+    await writeStateIfChanged(kv, NO_LEADS_STATE_KEY, prevState, beforeDelivery);
+  }
 
   let delivery: DeliveryOutcome | null = null;
+  let finalState = beforeDelivery;
   if (decision !== 'silent') {
     delivery = await tellTechChat(
       env,
@@ -382,14 +419,18 @@ export async function runNoLeadsCycle(
         attempts: attempts.total,
         leads,
         windowHours: NO_LEADS_WINDOW_HOURS,
+        buckets: attempts.buckets,
         formAttempts: attempts.form,
         startAttempts: attempts.start,
         now,
       }),
     );
+    const next = delivery.ok ? state : beforeDelivery;
+    const written = await writeStateIfChanged(kv, NO_LEADS_STATE_KEY, prevState, next);
+    finalState = written || JSON.stringify(prevState) === JSON.stringify(next) ? next : prevState;
   }
 
-  return { ran: true, reason: '', attempts, leads, decision, state, delivery };
+  return { ran: true, reason: '', attempts, leads, decision, state: finalState, delivery };
 }
 
 export interface MonitorStateReport {

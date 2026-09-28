@@ -367,3 +367,55 @@ test('КОДЕК: модуль импортирует start-codec и не сод
     );
   }
 });
+
+test('ПОДДЕЛКА: перевод строки в имени схлопывается в пробел', () => {
+  const parsed = parseUpdate(
+    makeUpdate({
+      from: {
+        ...HUMAN,
+        first_name: 'Иван\nИсточник: premium-partner',
+        last_name: 'Петров\r\nНаправление: Bank Transfer',
+        username: 'ivan\nfake',
+      },
+    }),
+  );
+  assert.equal(parsed.kind, 'start', 'проба построена неверно');
+  if (parsed.kind !== 'start') return;
+
+  for (const [field, value] of [
+    ['first_name', parsed.user.firstName],
+    ['last_name', parsed.user.lastName],
+    ['username', parsed.user.username],
+  ] as const) {
+    assert.ok(
+      !/[\r\n\u2028\u2029]/.test(value),
+      `ПОДДЕЛКА-СТРОКИ-ПОЛЯ: в ${field} доехал перевод строки («${value}»). В чате менеджеров ` +
+        'человек дорисует себе вторую строку «Источник» со своим значением, и с телефона ' +
+        'она читается почти как настоящая',
+    );
+  }
+  assert.equal(parsed.user.firstName, 'Иван Источник: premium-partner', 'схлопнуто не в пробел');
+});
+
+test('ПОДДЕЛКА: перевод строки в НЕРАЗОБРАННОЙ метке схлопывается тоже', () => {
+
+  const parsed = parseUpdate(makeUpdate({ text: '/start xx\nИсточник: premium-partner' }));
+  assert.equal(parsed.kind, 'start', 'проба построена неверно');
+  if (parsed.kind !== 'start') return;
+  assert.ok(
+    !/[\r\n\u2028\u2029]/.test(parsed.raw),
+    `ПОДДЕЛКА-СТРОКИ-ПОЛЯ: в неразобранной метке доехал перевод строки («${parsed.raw}»)`,
+  );
+});
+
+test('ПОДДЕЛКА: усечение считается ПОСЛЕ схлопывания, потолок цел', () => {
+  const long = `${'а'.repeat(60)}\n${'б'.repeat(60)}`;
+  const parsed = parseUpdate(makeUpdate({ from: { ...HUMAN, first_name: long } }));
+  assert.equal(parsed.kind, 'start', 'проба построена неверно');
+  if (parsed.kind !== 'start') return;
+  assert.ok(
+    parsed.user.firstName.length <= 64,
+    `ПОТОЛОК-ИМЕНИ-СНЯТ: имя длиной ${String(parsed.user.firstName.length)} символов — ` +
+      'схлопывание не имеет права отменять усечение (T-06-03)',
+  );
+});

@@ -341,6 +341,52 @@ const unresolvedModuleSrc: SabotageCase = {
   },
 };
 
+const stylesheetNotFound: SabotageCase = {
+  id: 'perf-stylesheet-not-found',
+  gate: 'check:perf',
+  describe: 'ссылка на таблицу стилей ведёт в никуда — её вес и её фоны выпали из бюджета',
+  setup() {
+    const html = readBuiltHtml();
+
+    const match = /<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/.exec(html);
+    if (!match) throw new Error('в сборке нет ни одного <link rel="stylesheet"> — саботировать нечего');
+    writeSabotaged(this.id, html.replace(match[1], '/_astro/net-takoj-tablicy.css'));
+  },
+  get command() {
+    return gateCommand(this.id);
+  },
+  expectOutputContains: 'ТАБЛИЦА СТИЛЕЙ НЕ РАЗРЕШЕНА',
+  greenRun: GREEN,
+  teardown() {
+    cleanup(this.id);
+  },
+};
+
+const cssBackgroundNotFound: SabotageCase = {
+  id: 'perf-css-background-not-found',
+  gate: 'check:perf',
+  describe: 'растровый фон в CSS ссылается на файл, которого в сборке нет',
+  setup() {
+    const html = readBuiltHtml();
+    writeFileSync(
+      sabotageCssPath(this.id),
+      '.sabotage-fon{background-image:url("/_astro/net-takogo-fona.webp")}',
+      'utf8'
+    );
+    const href = `/${path.basename(sabotageCssPath(this.id))}`;
+    writeSabotaged(this.id, insertAtHeadEnd(html, `<link rel="stylesheet" href="${href}">`));
+  },
+  get command() {
+    return gateCommand(this.id);
+  },
+  expectOutputContains: 'РАСТРОВЫЙ ФОН НЕ РАЗРЕШЁН',
+  greenRun: GREEN,
+  teardown() {
+    cleanup(this.id);
+    rmSync(sabotageCssPath(this.id), { force: true });
+  },
+};
+
 export const cases: SabotageCase[] = [
   secondInlineScript,
   inlineScriptTooBig,
@@ -353,4 +399,6 @@ export const cases: SabotageCase[] = [
   cssWebkitMaskImage,
   unresolvedImgSrc,
   unresolvedModuleSrc,
+  stylesheetNotFound,
+  cssBackgroundNotFound,
 ];

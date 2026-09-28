@@ -14,9 +14,8 @@ const locales: Locale[] = ['mn', 'ru', 'en'];
 
 const localeLabel: Record<Locale, string> = { mn: 'MN', ru: 'RU', en: 'EN' };
 
-const langGroupLabel: Record<Locale, string> = { mn: 'Хэл сонгох', ru: 'Выбор языка', en: 'Language' };
-
-const navLabel: Record<Locale, string> = { mn: 'Үндсэн цэс', ru: 'Основная навигация', en: 'Main navigation' };
+const langGroupLabel = t(locale, 'header.lang_group_label');
+const navLabel = t(locale, 'header.nav_label');
 
 const brandHref = pageId === 'home' ? '#home' : PAGE_ROUTES.home[locale];
 
@@ -31,7 +30,7 @@ const routesForPage = pageId === 'notFound' ? PAGE_ROUTES.home : PAGE_ROUTES[pag
     </a>
 
     {pageId === 'home' && (
-      <nav class="main-nav" aria-label={navLabel[locale]}>
+      <nav class="main-nav" aria-label={navLabel}>
         <a class="type-label" href="#programs">{t(locale, 'cards.section_title')}</a>
         <a class="type-label" href="#how-to-start">{t(locale, 'steps.title')}</a>
         <a class="type-label" href="#lead-form">{t(locale, 'form.title')}</a>
@@ -40,7 +39,7 @@ const routesForPage = pageId === 'notFound' ? PAGE_ROUTES.home : PAGE_ROUTES[pag
 
     <div class="header-actions">
 
-      <div class="lang-switch" role="group" aria-label={langGroupLabel[locale]}>
+      <div class="lang-switch" role="group" aria-label={langGroupLabel}>
         {locales.map((loc) => (
           loc === locale ? (
             <span class="lang-item lang-current type-label" lang={loc} aria-current="true">{localeLabel[loc]}</span>
@@ -81,7 +80,7 @@ const routesForPage = pageId === 'notFound' ? PAGE_ROUTES.home : PAGE_ROUTES[pag
     gap: var(--space-lg);
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .site-header-inner {
       min-height: 74px;
     }
@@ -124,7 +123,7 @@ const routesForPage = pageId === 'notFound' ? PAGE_ROUTES.home : PAGE_ROUTES[pag
     color: var(--gold);
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .brand {
       font-size: 22px;
     }

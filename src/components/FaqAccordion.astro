@@ -1,5 +1,6 @@
 ---
 import { t, type Locale } from '../i18n/t';
+import { jsonLd } from '../lib/json-ld';
 import CaretDown from './icons/CaretDown.astro';
 
 interface Props {
@@ -56,7 +57,7 @@ const faqSchema = {
 
 </div>
 
-<script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+<script type="application/ld+json" set:html={jsonLd(faqSchema)} />
 
 <style>
   .faq-accordion {

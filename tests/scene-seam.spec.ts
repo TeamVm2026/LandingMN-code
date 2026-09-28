@@ -52,7 +52,8 @@ async function hudshayaKromka(
 
   let shov = { e: 0, y: 0 };
   for (const start of [zoneTop, Math.max(zoneTop, zoneBot - size.height)]) {
-    await page.evaluate((y: number) => window.scrollTo(0, y), start);
+
+    await page.evaluate((y: number) => window.scrollTo({ top: y, behavior: 'instant' as ScrollBehavior }), start);
     await page.waitForTimeout(250);
     const realTop = await page.evaluate(() => Math.round(window.scrollY));
     const buf = await page.screenshot({ clip: { x: 0, y: 0, width: size.width, height: size.height } });

@@ -205,6 +205,8 @@ export interface NoLeadsAlertInput {
 
   readonly formAttempts: number;
   readonly startAttempts: number;
+
+  readonly buckets?: readonly string[];
   readonly simulated?: boolean;
 }
 
@@ -222,9 +224,17 @@ export function buildNoLeadsAlert(input: NoLeadsAlertInput): string {
     );
   }
 
+  const windowLine =
+    input.buckets === undefined || input.buckets.length === 0
+      ? `Окно: последние ${windowText}.\n`
+      : `Окно: ${String(input.buckets.length)} часовых ведра ` +
+        `(${escapeHtml(input.buckets[input.buckets.length - 1] ?? '')} … ` +
+        `${escapeHtml(input.buckets[0] ?? '')}, время UTC; самое свежее ведро ` +
+        `на момент проверки неполно, то есть покрыто меньше ${windowText}).\n`;
+
   return (
     `${mark}⛔ <b>Мониторинг: попытки есть, лидов нет</b>\n` +
-    `Окно: последние ${windowText}.\n` +
+    windowLine +
     `Попыток воронки: <b>${String(input.attempts)}</b> ` +
     `(форма ${String(input.formAttempts)}, /start ${String(input.startAttempts)}), ` +
     `порог ${String(NO_LEADS_MIN_ATTEMPTS)}.\n` +

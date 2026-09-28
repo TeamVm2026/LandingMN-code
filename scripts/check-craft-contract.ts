@@ -4,10 +4,24 @@ import path from 'node:path';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
 
+function argValue(name: string, fallback: string): string {
+  const argv = process.argv.slice(2);
+  const i = argv.indexOf(`--${name}`);
+  if (i === -1) return fallback;
+  const value = argv[i + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`FAIL: у аргумента --${name} нет значения`);
+    process.exit(1);
+  }
+  return value;
+}
+
+const srcRoot = path.resolve(projectRoot, argValue('src', 'src'));
+
 const SCAN_TARGETS: { dir: string; ext: string }[] = [
-  { dir: path.join(projectRoot, 'src', 'components'), ext: '.astro' },
-  { dir: path.join(projectRoot, 'src', 'layouts'), ext: '.astro' },
-  { dir: path.join(projectRoot, 'src', 'styles'), ext: '.css' },
+  { dir: path.join(srcRoot, 'components'), ext: '.astro' },
+  { dir: path.join(srcRoot, 'layouts'), ext: '.astro' },
+  { dir: path.join(srcRoot, 'styles'), ext: '.css' },
 ];
 
 type Status = 'PASS' | 'FAIL' | 'REPORT' | 'DEFERRED';
@@ -283,20 +297,20 @@ function checkBadgeParity(): void {
     kind?: 'box' | 'type';
   }[] = [
     {
-      file: path.join(projectRoot, 'src', 'components', 'HowToStart.astro'),
+      file: path.join(srcRoot, 'components', 'HowToStart.astro'),
       selector: '.spine-node',
       size: 74,
       kind: 'type',
       role: 'номер шага (мобильная база; десктопное значение задаётся в @media и здесь не проверяется)',
     },
     {
-      file: path.join(projectRoot, 'src', 'components', 'DirectionCards.astro'),
+      file: path.join(srcRoot, 'components', 'DirectionCards.astro'),
       selector: '.direction-caret',
       size: 18,
       role: 'каретка аккордеона направлений; совпадает по размеру с кареткой FAQ — один индикатор раскрытия на весь проект',
     },
     {
-      file: path.join(projectRoot, 'src', 'components', 'FaqAccordion.astro'),
+      file: path.join(srcRoot, 'components', 'FaqAccordion.astro'),
       selector: '.faq-caret',
       size: 18,
       role: 'каретка FAQ-аккордеона; вторая сторона того же паритета',
@@ -346,7 +360,7 @@ function checkBadgeParity(): void {
 }
 
 function checkHeroGroupCount(): void {
-  const heroFile = path.join(projectRoot, 'src', 'components', 'Hero.astro');
+  const heroFile = path.join(srcRoot, 'components', 'Hero.astro');
   let source: string;
   try {
     source = readFileSync(heroFile, 'utf8');
@@ -414,7 +428,7 @@ function checkContentLossDeferred(): void {
 }
 
 function checkFocusAndTransparency(): void {
-  const tokensFile = path.join(projectRoot, 'src', 'styles', 'tokens.css');
+  const tokensFile = path.join(srcRoot, 'styles', 'tokens.css');
   let source: string;
   try {
     source = readFileSync(tokensFile, 'utf8');
@@ -439,7 +453,8 @@ function checkFocusAndTransparency(): void {
   const blurOwners: string[] = [];
   const missingFallback: string[] = [];
   for (const f of scannedFiles) {
-    const declaresBlur = /backdrop-filter\s*:\s*blur\(/.test(f.css);
+
+    const declaresBlur = /backdrop-filter\s*:\s*(?!\s*none\b)[^;\s]/.test(f.css);
     if (!declaresBlur) continue;
     blurOwners.push(f.relFile);
     const hasFallback = /@media\s*\(\s*prefers-reduced-transparency\s*:\s*reduce\s*\)/.test(f.css);
@@ -448,9 +463,9 @@ function checkFocusAndTransparency(): void {
   const transparency9b = blurOwners.length > 0 && missingFallback.length === 0;
   const transparency9bDetail =
     blurOwners.length === 0
-      ? 'no backdrop-filter: blur() found anywhere (unexpected)'
+      ? 'no backdrop-filter glass found anywhere (unexpected)'
       : missingFallback.length === 0
-        ? `${blurOwners.length} file(s) declare blur, each has its own reduced-transparency fallback`
+        ? `${blurOwners.length} file(s) declare backdrop-filter glass, each has its own reduced-transparency fallback`
         : `no fallback in: ${missingFallback.join(', ')}`;
 
   const status: Status = focus9a && transparency9b ? 'PASS' : 'FAIL';

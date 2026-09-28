@@ -1,6 +1,10 @@
 
 import { readCappedBody } from '../../src/server/http/capped-body.ts';
-import { TELEGRAM_ATTEMPT_TIMEOUT_MS, deliverWithRetries } from '../../src/server/lead/telegram.ts';
+import {
+  TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
+  deliverWithRetries,
+} from '../../src/server/lead/telegram.ts';
 import { CSP_BODY_MAX_BYTES, cspReportKey, isNoise, normalizeCspBody } from '../../src/server/report/csp.ts';
 import { buildCapNoticeMessage, buildCspMessage } from '../../src/server/report/message.ts';
 import {
@@ -122,7 +126,8 @@ export const onRequestPost: PagesFunction<CspEnv> = async (context) => {
           text,
           fetchImpl,
           sleep: (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
-          apiBase: (env.TG_API_BASE ?? '').trim() === '' ? undefined : env.TG_API_BASE,
+
+          apiBase: allowedApiBase(env.TG_API_BASE),
           timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
         }).catch(() => undefined),
       );

@@ -102,17 +102,17 @@ test.describe('Появление блоков — однократное (LAND-
 
 test.describe('Появление РЕАЛЬНО анимируется, а не только объявлено', () => {
 
-  for (const selector of ['.direction-card--lead', '.spine-step', '.partners-person']) {
+  for (const selector of ['.direction-card', '.spine-step', '.partners-person']) {
     test(`движение наблюдается у ${selector}`, async ({ page }) => {
       await page.setViewportSize(DESKTOP_VIEWPORT);
       await page.goto(HOME);
       await page.waitForTimeout(250);
 
       const target = page.locator(`${selector}.is-pending`).first();
-      if ((await target.count()) === 0) {
-
-        test.skip(true, `${selector} виден при загрузке, появление к нему не применяется`);
-      }
+      expect(
+        await target.count(),
+        `${selector}: появление не применено ни к одному элементу — селектор мёртв или наблюдатель выключен`,
+      ).toBeGreaterThan(0);
 
       const result = await page.evaluate(async (sel) => {
         const el = document.querySelector<HTMLElement>(`${sel}.is-pending`)!;

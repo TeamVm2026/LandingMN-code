@@ -1,5 +1,5 @@
 
-import { registerSink } from './bus';
+import { registerSink, QUEUE_CAP } from './bus';
 import type { EventName, EventParams } from './events';
 
 export interface DebugEvent {
@@ -18,18 +18,24 @@ declare global {
 const FLAG_KEY = 'lmn_sink';
 const FLAG_PARAM = '__sink';
 
+const LOG_CAP = QUEUE_CAP;
+
 export function maybeRegisterDebugSink(): boolean {
-  let on = false;
+  let asked: string | null = null;
 
   try {
-    on = new URLSearchParams(window.location.search).get(FLAG_PARAM) === '1';
+    asked = new URLSearchParams(window.location.search).get(FLAG_PARAM);
   } catch {
 
     /* */
   }
 
+  let on = asked === '1';
+
   try {
     if (on) sessionStorage.setItem(FLAG_KEY, '1');
+
+    else if (asked === '0') sessionStorage.removeItem(FLAG_KEY);
     else on = sessionStorage.getItem(FLAG_KEY) === '1';
   } catch {
 
@@ -40,6 +46,8 @@ export function maybeRegisterDebugSink(): boolean {
 
   const log: DebugEvent[] = (window.__lmnEvents ??= []);
   registerSink((name, params) => {
+
+    if (log.length >= LOG_CAP) return;
     log.push({ name, params, ts: Date.now() });
   });
 

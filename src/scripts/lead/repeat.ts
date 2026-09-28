@@ -1,6 +1,6 @@
 
 import { readLeadState, clearLeadState } from './state.ts';
-import { revealBelowSticky } from './reveal.ts';
+import { revealFully } from './reveal.ts';
 
 const PANEL_CLASS = 'lead-repeat';
 
@@ -29,16 +29,20 @@ function buildPanel(
   bodyEl.className = `${PANEL_CLASS}__body type-body`;
   bodyEl.textContent = strings.body;
 
-  const ctaEl = document.createElement('a');
-  ctaEl.className = `${PANEL_CLASS}__cta type-body-bold`;
-  ctaEl.href = strings.href;
-  ctaEl.target = '_blank';
-  ctaEl.rel = 'noopener noreferrer';
-  ctaEl.textContent = strings.cta;
+  const hrefSafe = /^https?:\/\//i.test(strings.href);
 
   panel.appendChild(titleEl);
   panel.appendChild(bodyEl);
-  panel.appendChild(ctaEl);
+
+  if (hrefSafe) {
+    const ctaEl = document.createElement('a');
+    ctaEl.className = `${PANEL_CLASS}__cta type-body-bold`;
+    ctaEl.href = strings.href;
+    ctaEl.target = '_blank';
+    ctaEl.rel = 'noopener noreferrer';
+    ctaEl.textContent = strings.cta;
+    panel.appendChild(ctaEl);
+  }
 
   return { panel, titleEl };
 }
@@ -111,6 +115,6 @@ export function mountSuccessPanel(): boolean {
     panel.focus({ preventScroll: true });
   });
 
-  revealBelowSticky(panel);
+  revealFully(panel);
   return true;
 }

@@ -152,9 +152,7 @@ export function buildRepeatNotice(input: RepeatNoticeInput): string {
   const n = Number.isFinite(input.n) ? Math.max(1, Math.trunc(input.n)) : 1;
   const firstAt = formatReceivedAt(input.firstAt);
 
-  const named = user.username
-    ? `@${escapeHtml(preCap(user.username))}`
-    : escapeHtml(preCap(fullName(user)));
+  const rawNamed = user.username ? `@${preCap(user.username)}` : preCap(fullName(user));
 
   const head = input.contactDelivered
     ? `${REPEAT_HEAD} — обращение №${n}`
@@ -163,16 +161,16 @@ export function buildRepeatNotice(input: RepeatNoticeInput): string {
   const build = (who: string): string =>
     `${head}\n\n` +
     `<b>Направление:</b> ${directionLabelOf(input.payload, input.raw)}\n` +
-    (who ? `<b>Посетитель:</b> ${who}\n` : '') +
+    (who ? `<b>Посетитель:</b> ${escapeHtml(who)}\n` : '') +
     contactLine(user.id) +
     `<b>Первое обращение:</b> ${escapeHtml(firstAt)}\n`;
 
-  let text = build(named);
+  let text = build(rawNamed);
 
   const over = renderedLength(text) - TELEGRAM_TEXT_MAX;
   if (over > 0) {
-    const keep = named.length - over - ELLIPSIS.length;
-    text = build(keep > 0 ? named.slice(0, keep) + ELLIPSIS : '');
+    const keep = rawNamed.length - over - ELLIPSIS.length;
+    text = build(keep > 0 ? rawNamed.slice(0, keep) + ELLIPSIS : '');
   }
 
   return text;

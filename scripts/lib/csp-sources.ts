@@ -84,6 +84,15 @@ export const COMPANION_SOURCES: ReadonlyArray<{
       'Clarity выгружает записи сессии на поддомен, выбранный сервером (c.clarity.ms, e.clarity.ms, …); ' +
       'имени поддомена в нашем коде нет и быть не может',
   },
+
+  {
+    source: 'https://scripts.clarity.ms',
+    directives: ['script-src'],
+    why:
+      'Clarity грузит СВОЙ рабочий скрипт с отдельного поддомена: тег www.clarity.ms/tag/<id> ' +
+      'вставляет <script src="https://scripts.clarity.ms/…">. Без этой строки в день enforce ' +
+      'умирает не «часть Clarity», а Clarity целиком — тег загрузится и не сделает ничего',
+  },
 ];
 
 export const BASE_DIRECTIVES: ReadonlyArray<readonly [string, string]> = [

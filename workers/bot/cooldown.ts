@@ -95,27 +95,22 @@ export async function hitCooldown(
   return { kind, n: state.n, firstAt: state.start };
 }
 
-export async function hitUpdateOnce(kv: BotKv, updateId: number | null): Promise<boolean> {
-
-  if (updateId === null || !Number.isFinite(updateId)) return true;
-
-  const key = `${UPDATE_KEY_PREFIX}${updateId}`;
-
+export async function seenUpdate(kv: BotKv, updateId: number | null): Promise<boolean> {
+  if (updateId === null || !Number.isFinite(updateId)) return false;
   try {
-    const seen = await kv.get(key, 'json');
-    if (seen !== null && seen !== undefined) return false;
+    const seen = await kv.get(`${UPDATE_KEY_PREFIX}${updateId}`, 'json');
+    return seen !== null && seen !== undefined;
+  } catch {
+    return false;
+  }
+}
+
+export async function markUpdate(kv: BotKv, updateId: number | null): Promise<void> {
+  if (updateId === null || !Number.isFinite(updateId)) return;
+  try {
+    await kv.put(`${UPDATE_KEY_PREFIX}${updateId}`, '1', { expirationTtl: BOT_UPDATE_DEDUP_SECONDS });
   } catch {
 
     /* */
   }
-
-  try {
-
-    await kv.put(key, '1', { expirationTtl: BOT_UPDATE_DEDUP_SECONDS });
-  } catch {
-
-    /* */
-  }
-
-  return true;
 }

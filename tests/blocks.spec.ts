@@ -1,5 +1,6 @@
 
 import { test, expect } from '@playwright/test';
+import { waitSettled } from './lib/settle.ts';
 import { PAGE_ROUTES, type Locale } from '../src/i18n/routes';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
@@ -707,7 +708,8 @@ test.describe('ПК-раскладка по макету', () => {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(PAGE_ROUTES.home[locale]);
         await page.evaluate(() => window.scrollTo(0, 900));
-        await page.waitForTimeout(300);
+
+        await waitSettled(page, '.direction-card');
 
         const cards = await page.locator('.direction-card').evaluateAll((els) =>
           els.map((el) => {
@@ -733,10 +735,10 @@ test.describe('ПК-раскладка по макету', () => {
           `на ${width}/${locale} свёрнутые карточки разной высоты: ${hs.join('/')}`,
         ).toBeLessThanOrEqual(1);
 
-        const expectedCollapsedH = width <= 1081 ? 210 : 163;
+        const expectedCollapsedH = width <= 1081 ? 236 : width <= 1119 ? 190 : 163;
         expect(
           Math.abs(cards[0]!.h - expectedCollapsedH),
-          `на ${width}/${locale} свёрнутая высота ${cards[0]!.h} не совпадает с ожидаемой ${expectedCollapsedH} (полоса ${width <= 1081 ? '1050-1081' : '>=1082'})`,
+          `на ${width}/${locale} свёрнутая высота ${cards[0]!.h} не совпадает с ожидаемой ${expectedCollapsedH} (полоса ${width <= 1081 ? '1050-1081' : width <= 1119 ? '1082-1119' : '>=1120'})`,
         ).toBeLessThanOrEqual(1);
 
         const caretGaps = await page.locator('.direction-card').evaluateAll((els) =>
@@ -898,29 +900,42 @@ test.describe('ПК-раскладка по макету', () => {
     );
   });
 
-  test('390: раскрытые карточки — высоты байт-в-байт прежние (мобиль не задет)', async ({ page }) => {
-    const expected: Record<Locale, number[]> = {
-      mn: [801, 887, 934],
-      ru: [762, 825, 871],
-      en: [825, 848, 848],
-    };
+  test('390: раскрытые карточки — полы равенства ряда на мобиле не действуют (мобиль не задет)', async ({ page }) => {
+    const FLOORED = [
+      '.direction-name',
+      '.direction-audience',
+      '.direction-section-title',
+      '.direction-gains',
+      '.direction-steps',
+    ];
     for (const locale of LOCALES) {
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(PAGE_ROUTES.home[locale]);
 
       const summaries = page.locator('.direction-card > summary');
       const count = await summaries.count();
+      expect(count, 'карточек направлений не три').toBe(3);
       for (let i = 0; i < count; i++) {
         await summaries.nth(i).click();
       }
-      await page.waitForTimeout(700);
 
-      const hs = await page
-        .locator('.direction-card')
-        .evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().height)));
-      expect(hs, `на 390/${locale} высоты раскрытых карточек изменились: ${hs.join('/')}`).toEqual(
-        expected[locale],
-      );
+      const probe = await page.evaluate((sels) => {
+        const floored: string[] = [];
+        let checked = 0;
+        document.querySelectorAll('.direction-card').forEach((card, c) => {
+          for (const sel of sels) {
+            card.querySelectorAll<HTMLElement>(sel).forEach((el) => {
+              checked++;
+              const v = getComputedStyle(el).minBlockSize;
+              if (v !== '0px' && v !== 'auto') floored.push(`карточка ${c + 1} ${sel}: ${v}`);
+            });
+          }
+        });
+        return { floored, checked };
+      }, FLOORED);
+
+      expect(probe.checked, `на 390/${locale} селекторы полов ничего не нашли`).toBeGreaterThanOrEqual(15);
+      expect(probe.floored, `на 390/${locale} пол равенства ряда действует на мобиле`).toEqual([]);
     }
   });
 

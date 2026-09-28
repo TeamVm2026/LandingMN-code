@@ -94,6 +94,58 @@ for (const locale of LOCALES_UNDER_TEST) {
   });
 }
 
+for (const width of [360, 390, 768, 1050, 1440]) {
+  test(`${width}px: панель по центру секции и на материале формы`, async ({ browser }) => {
+    const context = await browser.newContext({ viewport: { width, height: 900 } });
+    const page = await context.newPage();
+    await seedLeadKey(page, leadValue(HOUR_MS));
+    await page.goto(PAGE_ROUTES.home.ru);
+    await expect(page.locator(PANEL)).toBeVisible();
+
+    const m = await page.evaluate(
+      ([panelSel, formSel]) => {
+        const panel = document.querySelector<HTMLElement>(panelSel)!;
+        const form = document.querySelector<HTMLElement>(formSel)!;
+        const container = document.querySelector<HTMLElement>('.lead-form__container')!;
+        const ps = getComputedStyle(panel);
+        const fs = getComputedStyle(form);
+        const keys = [
+          'backgroundImage',
+          'backgroundColor',
+          'backdropFilter',
+          'borderTopLeftRadius',
+          'boxShadow',
+        ] as const;
+        const r = panel.getBoundingClientRect();
+        const c = container.getBoundingClientRect();
+        return {
+          differs: keys.filter((k) => ps[k] !== fs[k]).map((k) => `${k}: ${ps[k]} ≠ ${fs[k]}`),
+          centerDelta: r.left + r.width / 2 - (c.left + c.width / 2),
+          width: r.width,
+          containerWidth: c.width,
+        };
+      },
+      [PANEL, FORM] as const,
+    );
+
+    expect(m.differs, `панель носит не тот материал, что форма: ${m.differs.join('; ')}`).toEqual([]);
+    expect(
+      Math.abs(m.centerDelta),
+      `центр панели смещён от центра секции на ${m.centerDelta.toFixed(1)}px`,
+    ).toBeLessThanOrEqual(1);
+    if (width >= 860) {
+
+      expect(Math.round(m.width), 'ширина панели не совпала с шириной формы').toBe(760);
+    } else {
+      expect(
+        Math.abs(m.width - m.containerWidth),
+        'до 860px панель, как и форма, занимает всю колонку секции',
+      ).toBeLessThanOrEqual(1);
+    }
+    await context.close();
+  });
+}
+
 test('панель не объявляется скринридеру: ни role=status, ни aria-live', async ({ page }) => {
   await seedLeadKey(page, leadValue(HOUR_MS));
   await page.goto(PAGE_ROUTES.home.mn);

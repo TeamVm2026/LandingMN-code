@@ -98,4 +98,31 @@ const partialTranslation: SabotageCase = {
   },
 };
 
-export const cases: SabotageCase[] = [requiredKeyGone, partialTranslation];
+const duplicateKey: SabotageCase = {
+  id: 'i18n-duplicate-key',
+  gate: 'check:i18n',
+  describe: 'в mn.json ключ hero.h1 объявлен дважды: правка переводчика выше оригинала молча теряется',
+  setup() {
+    const dir = copyDicts(this.id);
+    const file = path.join(dir, 'mn.json');
+    const text = readFileSync(file, 'utf8');
+    const anchor = '"h1": ';
+    if (text.split(anchor).length !== 2) throw new Error('в копии mn.json ключ "h1" не единственный — якорь саботажа сломан');
+    writeFileSync(file, text.replace(anchor, '"h1": "ПРАВКА ПЕРЕВОДЧИКА", ' + anchor), 'utf8');
+  },
+  get command() {
+    return [
+      '--experimental-strip-types',
+      'scripts/check-i18n-completeness.ts',
+      '--dir',
+      argPath(path.join(tmpDir, `${this.id}-i18n`)),
+    ];
+  },
+  expectOutputContains: 'ДУБЛЬ КЛЮЧА',
+  greenRun: GREEN,
+  teardown() {
+    cleanup(this.id);
+  },
+};
+
+export const cases: SabotageCase[] = [requiredKeyGone, partialTranslation, duplicateKey];

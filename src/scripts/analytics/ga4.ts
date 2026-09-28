@@ -16,6 +16,7 @@ export function initGa4(
   id: string,
   analyticsDefault: ConsentChoice,
   userProps: Record<string, string>,
+  internal = false,
 ): void {
   window.dataLayer = window.dataLayer || [];
 
@@ -50,6 +51,8 @@ export function initGa4(
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
     user_properties: truncate(userProps),
+
+    ...(internal ? { traffic_type: 'internal' } : {}),
   });
 
   const tag = document.createElement('script');

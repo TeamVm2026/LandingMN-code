@@ -354,7 +354,7 @@ const programs = [
     color: var(--gold);
   }
 
-  @media (max-width: 859px) {
+  @media (max-width: 859.98px) {
     .direction-name {
       font-size: clamp(40px, calc(19.4px + 5.7vw), 44px);
     }
@@ -436,13 +436,6 @@ const programs = [
     transition:
       opacity var(--motion-base) var(--ease-reveal),
       padding-bottom var(--motion-reveal) var(--ease-reveal);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .direction-body-inner,
-    details[open] .direction-body-inner {
-      transition: none;
-    }
   }
 
   details[open] > .direction-summary::after {
@@ -544,6 +537,13 @@ const programs = [
     transition: opacity var(--motion-base) var(--ease-reveal) var(--motion-press);
   }
 
+  @media (prefers-reduced-motion: reduce) {
+    .direction-body-inner,
+    details[open] .direction-body-inner {
+      transition: none;
+    }
+  }
+
   .direction-section {
     max-width: 56ch;
     margin-inline: auto;
@@ -580,6 +580,19 @@ const programs = [
     gap: 8px;
     padding: 14px 10px;
     text-align: center;
+  }
+
+  .direction-gain-mark {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    color: var(--text);
+  }
+
+  .direction-gain-mark :global(svg) {
+    width: 26px;
+    height: 26px;
   }
 
   @media (min-width: 390px) {
@@ -628,17 +641,16 @@ const programs = [
     border-left: 1px solid var(--line);
   }
 
-  .direction-gain-mark {
-    display: grid;
-    place-items: center;
-    width: 26px;
-    height: 26px;
-    color: var(--text);
-  }
-
-  .direction-gain-mark :global(svg) {
-    width: 26px;
-    height: 26px;
+  @media (min-width: 1050px) and (max-width: 1279px) {
+    .direction-gains {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .direction-gain:nth-child(n + 2) {
+      border-top: 1px solid var(--line);
+    }
+    .direction-gain:nth-child(even) {
+      border-left: 0;
+    }
   }
 
   .direction-gain-label {
@@ -762,7 +774,7 @@ const programs = [
 
     .direction-steps {
 
-      min-block-size: 16.1lh;
+      min-block-size: 18.1lh;
     }
   }
 
@@ -770,6 +782,12 @@ const programs = [
     .direction-name {
 
       min-block-size: 2lh;
+    }
+  }
+
+  @media (min-width: 1050px) and (max-width: 1119px) {
+    .direction-audience {
+      min-block-size: 3lh;
     }
   }
 
@@ -781,12 +799,12 @@ const programs = [
 
     .direction-gains {
 
-      min-block-size: 11.2lh;
+      min-block-size: 12.8lh;
     }
 
     .direction-steps {
 
-      min-block-size: 22.1lh;
+      min-block-size: 24.1lh;
     }
   }
 </style>

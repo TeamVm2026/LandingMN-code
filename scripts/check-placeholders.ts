@@ -1,6 +1,7 @@
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { PREVIEW_HOST_PATTERN } from './lib/preview-host.ts';
 
 const projectRoot = path.resolve(import.meta.dirname, '..');
 
@@ -19,9 +20,26 @@ function argValue(name: string, fallback: string): string {
 const distArg = argValue('dist', 'dist');
 const distDir = path.resolve(projectRoot, distArg);
 
-const PREVIEW_HOST_PATTERN = /(^|\.)pages\.dev$|^localhost$|^127\.0\.0\.1$/;
+const MARKERS: { name: string; re: RegExp }[] = [
 
-function collectHtml(dir: string, out: string[]): void {
+  { name: 'PLACEHOLDER_*', re: /PLACEHOLDER[A-Z_]*/g },
+
+  { name: 'TODO/FIXME/XXX', re: /(?<![A-Za-z0-9_])(TODO|FIXME|XXX)(?![a-z0-9])/g },
+  { name: 'changeme', re: /(?<![A-Za-z0-9])change[-_]?me(?![A-Za-z0-9])/gi },
+
+  { name: 'example.com', re: /(?<![A-Za-z0-9.-])example\.(com|org|net)(?![A-Za-z0-9-])/gi },
+
+  {
+    name: 'your*',
+    re: /(?<![A-Za-z0-9])your[-_]?(domain|site|company|brand|bot|page|channel)(?![A-Za-z0-9])/gi,
+  },
+  { name: 'xxx', re: /(?<![A-Za-z0-9])[xX]{3,}(?![A-Za-z0-9])/g },
+  { name: 'lorem ipsum', re: /(?<![A-Za-z0-9])lorem ipsum/gi },
+];
+
+const SCAN_EXT = ['.html', '.js', '.css', '.json', '.txt', '.xml', '.webmanifest', '.svg'];
+
+function collectFiles(dir: string, out: string[]): void {
   let entries: string[];
   try {
     entries = readdirSync(dir);
@@ -30,8 +48,8 @@ function collectHtml(dir: string, out: string[]): void {
   }
   for (const entry of entries) {
     const full = path.join(dir, entry);
-    if (statSync(full).isDirectory()) collectHtml(full, out);
-    else if (entry.endsWith('.html')) out.push(full);
+    if (statSync(full).isDirectory()) collectFiles(full, out);
+    else if (SCAN_EXT.includes(path.extname(entry).toLowerCase())) out.push(full);
   }
 }
 
@@ -51,26 +69,45 @@ function main(): void {
   const isPreview = host === '' || PREVIEW_HOST_PATTERN.test(host);
 
   const files: string[] = [];
-  collectHtml(distDir, files);
+  collectFiles(distDir, files);
 
-  const hits: { file: string; count: number }[] = [];
+  if (files.length === 0) {
+    console.error(
+      `FAIL: СБОРКА НЕ ОСМОТРЕНА — в ${distArg}/ нет ни одного файла расширений ` +
+        `${SCAN_EXT.join(', ')}. Отсутствие заглушек в непрочитанных файлах сертифицировать нельзя.`
+    );
+    process.exit(1);
+  }
+
+  const hits: { file: string; count: number; found: string[] }[] = [];
   let total = 0;
   for (const file of files) {
-    const matches = readFileSync(file, 'utf8').match(/PLACEHOLDER[A-Z_]*/g) ?? [];
-    if (matches.length > 0) {
-      hits.push({ file: path.relative(projectRoot, file), count: matches.length });
-      total += matches.length;
+    const text = readFileSync(file, 'utf8');
+    const found = new Set<string>();
+    let count = 0;
+    for (const marker of MARKERS) {
+      const matches = text.match(marker.re) ?? [];
+      if (matches.length === 0) continue;
+      count += matches.length;
+      for (const m of new Set(matches)) found.add(`${marker.name}: «${m}»`);
+    }
+    if (count > 0) {
+      hits.push({ file: path.relative(projectRoot, file), count, found: [...found] });
+      total += count;
     }
   }
 
-  console.log(`Домен сборки: ${host || '(не задан)'} — режим ${isPreview ? 'превью' : 'БОЕВОЙ'}`);
+  console.log(
+    `Домен сборки: ${host || '(не задан)'} — режим ${isPreview ? 'превью' : 'БОЕВОЙ'}; ` +
+      `осмотрено ${files.length} файл(ов), словарь заглушек: ${MARKERS.length} маркер(ов).`
+  );
 
   if (total === 0) {
     console.log('PASS: заглушек в собранных страницах нет.');
     return;
   }
 
-  const lines = hits.map((h) => `  ${h.file}: ${h.count}`).join('\n');
+  const lines = hits.map((h) => `  ${h.file}: ${h.count} — ${h.found.join('; ')}`).join('\n');
 
   if (isPreview) {
     console.log(

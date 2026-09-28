@@ -27,12 +27,13 @@ export const config = Object.freeze({
   turnstileSitekey: PUBLIC_TURNSTILE_SITEKEY,
 
   partners: Object.freeze({
-    followersAsOf: '2026-08-26',
+
+    followersAsOf: '2026-09-09',
 
     people: Object.freeze([
-      Object.freeze({ id: 'newsac', name: 'Newsac', followersThousands: 45 }),
-      Object.freeze({ id: 'maaraamn', name: 'MaaRaa MN', followersThousands: 184 }),
-      Object.freeze({ id: 'zilkenberg', name: 'Zilkenberg', followersThousands: 60 }),
+      Object.freeze({ id: 'newsac', name: 'Newsac', followersThousands: 186 }),
+      Object.freeze({ id: 'maaraamn', name: 'MaaRaa MN', followersThousands: 60 }),
+      Object.freeze({ id: 'zilkenberg', name: 'Zilkenberg', followersThousands: 45 }),
       Object.freeze({ id: 'lexor2k', name: 'Lexor2k', followersThousands: 176 }),
     ]),
 

@@ -359,3 +359,30 @@ test('ПОВТОР: направление добавлено, но атрибу
     `ПОВТОР-НЕ-КОРОТКИЙ: ${text.length} симв. против ${notice().length} у полного лида`,
   );
 });
+
+test('ПОВТОР: усечение опознания не рвёт HTML-сущность пополам', () => {
+
+  const cut: string[] = [];
+  for (let n = 5000; n < 5005; n++) {
+    const text = repeat({ user: { ...user, username: '', firstName: '&'.repeat(n), lastName: '' } });
+    const broken = text.match(/&(?!amp;|lt;|gt;|quot;|#\d+;)[A-Za-z#]{0,6}/g) ?? [];
+    assert.deepEqual(
+      broken,
+      [],
+      `СУЩНОСТЬ-РАЗРЕЗАНА: при имени из ${String(n)} знаков усечение оставило обрывок ` +
+        `HTML-сущности (${broken.slice(0, 3).join(', ')}). Telegram отвечает на такое 400 ` +
+        '«can\'t parse entities», а это `permanent` — повтора нет, и пометка «повторный лид» ' +
+        'не доезжает совсем',
+    );
+    assert.ok(text.includes('Первое обращение'), 'ПОМЕТКА-РАЗВАЛИЛАСЬ: усечение съело структуру');
+    assert.ok(text.includes('…'), `проба построена неверно: при ${String(n)} знаках усечения не было`);
+    cut.push(String(text.length));
+  }
+  console.log(` [замер] длины усечённой пометки на 5000…5004 знаках имени: ${cut.join(', ')}`);
+});
+
+test('ПОВТОР: имя со спецсимволами экранируется и в усечённом виде', () => {
+  const text = repeat({ user: { ...user, username: '', firstName: '<b>Иван</b>', lastName: '' } });
+  assert.ok(!text.includes('<b>Иван'), 'РАЗМЕТКА-ПРОСОЧИЛАСЬ: имя попало в сообщение неэкранированным');
+  assert.ok(text.includes('&lt;b&gt;Иван'), 'ЭКРАНИРОВАНИЕ-ПОТЕРЯНО: имя не экранировано вовсе');
+});

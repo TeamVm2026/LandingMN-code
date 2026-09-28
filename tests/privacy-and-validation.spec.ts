@@ -117,6 +117,10 @@ test.describe('Сообщения валидации — свои, а не бр�
   }) => {
     await page.goto(PAGE_ROUTES.home.ru);
     await page.locator('form[data-lead-form]').scrollIntoViewIfNeeded();
+
+    await page
+      .locator('form[data-lead-form][data-lead-form-ready]')
+      .waitFor({ state: 'attached', timeout: 15_000 });
     await page.locator('.lead-form__submit').click();
     await page.waitForTimeout(300);
 
@@ -139,6 +143,10 @@ test.describe('Сообщения валидации — свои, а не бр�
   test('ошибка пустого поля контакта не красит чипы канала', async ({ page }) => {
 
     await page.goto(PAGE_ROUTES.home.ru);
+
+    await page
+      .locator('form[data-lead-form][data-lead-form-ready]')
+      .waitFor({ state: 'attached', timeout: 15_000 });
     await page.locator('.lead-form__submit').click();
     await page.waitForTimeout(300);
 
@@ -166,6 +174,10 @@ test.describe('Сообщения валидации — свои, а не бр�
   test('переключение канала не гасит ошибку пустого поля контакта', async ({ page }) => {
 
     await page.goto(PAGE_ROUTES.home.ru);
+
+    await page
+      .locator('form[data-lead-form][data-lead-form-ready]')
+      .waitFor({ state: 'attached', timeout: 15_000 });
     await page.locator('.lead-form__submit').click();
     await page.waitForTimeout(300);
 
@@ -192,6 +204,10 @@ test.describe('Сообщения валидации — свои, а не бр�
     await page.fill('#lead-contact', '99112233');
     await page.locator('input[name="direction"]').first().check();
     await page.locator('#lead-consent').check();
+
+    await page
+      .locator('form[data-lead-form][data-lead-form-ready]')
+      .waitFor({ state: 'attached', timeout: 15_000 });
     await page.locator('.lead-form__submit').click();
     await page.waitForTimeout(300);
     expect(await page.locator('[data-field-error]').count()).toBe(0);

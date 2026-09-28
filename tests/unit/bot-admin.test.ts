@@ -18,7 +18,8 @@ const TOKEN = '8100200300:TESTTESTTESTTESTTESTTESTTESTTESTTES';
 const SECRET = 'webhook-secret-value-0123456789';
 const CHAT = '-1002222222222';
 const MANAGER = 'https://t.me/melbet_mn_manager';
-const API = 'https://api.example.invalid';
+
+const API = 'http://127.0.0.1:9099';
 const ORIGIN = 'https://landingmn-bot.workers.dev';
 
 interface Recorded {

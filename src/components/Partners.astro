@@ -52,7 +52,7 @@ for (const person of people) {
   if (!busts[person.id]) {
     throw new Error(
       `Нет бюста для «${person.id}». Собери его: ` +
-        `npm run prepare:media -- --only client-partner-${person.id} ` +
+        `npm run media:prepare -- --only client-partner-${person.id} ` +
         '(ветка CLIENT_BUSTS в scripts/prepare-media.ts).'
     );
   }
@@ -94,6 +94,7 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
               alt=""
               loading="lazy"
               decoding="async"
+              draggable="false"
             />
           </div>
 
@@ -115,11 +116,12 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
         formats={['avif', 'webp']}
         fallbackFormat="webp"
         widths={[420, 640, 900, 1210, 1800]}
-        sizes="(max-width: 719px) 1px, (min-width: 1258px) 1210px, calc(100vw - 48px)"
+        sizes="(max-width: 719.98px) 1px, (min-width: 1258px) 1210px, calc(100vw - 48px)"
         quality={52}
         alt={alt}
         loading="lazy"
         decoding="async"
+        draggable="false"
       />
     </div>
   </div>
@@ -269,7 +271,7 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
         mask-position: left center;
       }
 
-      @media (max-width: 719px) {
+      @media (max-width: 719.98px) {
         .partners-person:nth-child(even) .partners-name {
           -webkit-mask-position: right center;
           mask-position: right center;
@@ -305,7 +307,7 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
       }
   }
 
-  @media (max-width: 719px) {
+  @media (max-width: 719.98px) {
 
     .partners-names {
       --partner-tile: 46vw;

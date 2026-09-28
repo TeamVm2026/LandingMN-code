@@ -4,6 +4,7 @@ import { writeFileSync, existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { GUARDED_PORTS, occupiedPorts, portGuardMessage, checkBuildFreshness, freshnessGuardMessage } from './lib/preflight.ts';
 import { unexpectedConsoleErrors, type ConsoleErrorItem } from './lib/off-cloudflare.ts';
+import { calibrateCpu, CPU_REFERENCE_BENCHMARK, CPU_DEFAULT_MULTIPLIER } from './lib/cpu-calibration.ts';
 
 const SEED_LEAD = process.argv.includes('--seed-lead');
 
@@ -17,6 +18,15 @@ const PORT = Number(process.env.PREVIEW_PORT ?? 4321);
 const PATHS: Record<string, string> = { mn: '/', ru: '/ru/', en: '/en/' };
 
 const THRESHOLDS = { perf: 90, a11y: 90, seo: 95, bp: 90, lcpSeconds: 2.5 };
+
+const LH_RUNS = Math.max(1, Number(process.env.LH_RUNS ?? (process.env.CI ? 5 : 1)));
+
+interface LhrLike {
+  categories: Record<string, { score: number | null }>;
+  audits: Record<string, { numericValue?: number; displayValue?: string; details?: unknown }>;
+  environment?: { benchmarkIndex?: number };
+  configSettings?: { throttling?: { cpuSlowdownMultiplier?: number; rttMs?: number; throughputKbps?: number } };
+}
 
 function readEnv(name: string): string {
   const fromProcess = process.env[name];
@@ -167,6 +177,24 @@ async function main(): Promise<void> {
       chromePath,
     });
 
+    const { throttling: lhThrottling } = await import('lighthouse/core/config/constants.js');
+    const calibrationRun = await lighthouse(
+      `http://localhost:${PORT}/`,
+      { port: chrome.port, output: 'json', logLevel: 'error', onlyCategories: ['performance'] } as never,
+      undefined as never,
+    );
+    const benchmarkIndex = (calibrationRun?.lhr as LhrLike | undefined)?.environment?.benchmarkIndex;
+    const cpu = calibrateCpu(benchmarkIndex, process.env.LH_CPU_MULTIPLIER);
+
+    const throttlingSettings = { ...lhThrottling.mobileSlow4G, cpuSlowdownMultiplier: cpu.multiplier };
+    console.log(
+      `Процессор: benchmarkIndex ${benchmarkIndex === undefined ? '—' : Math.round(benchmarkIndex)}` +
+        (cpu.source === 'override'
+          ? ` → множитель ${cpu.multiplier}× ЗАДАН ВРУЧНУЮ (LH_CPU_MULTIPLIER)`
+          : ` → множитель ${cpu.multiplier}× (опора ${CPU_REFERENCE_BENCHMARK} = ${CPU_DEFAULT_MULTIPLIER}×; без калибровки было бы ${CPU_DEFAULT_MULTIPLIER}×)`) +
+        (cpu.clamped ? ' — ⚠️ УПЁРСЯ В ГРАНИЦУ, машина вне диапазона честной эмуляции' : ''),
+    );
+
     let clearCache: (() => Promise<void>) | undefined;
 
     if (SEED_LEAD) {
@@ -199,38 +227,100 @@ async function main(): Promise<void> {
     try {
       for (const [locale, p] of Object.entries(PATHS)) {
 
-        if (clearCache) await clearCache();
+        const samples: {
+          perf: number;
+          a11y: number;
+          bp: number;
+          seo: number;
+          lcpSeconds: number;
+          cls: string;
+          tbt: string;
+          clarityHits: number;
+          lhr: LhrLike;
+        }[] = [];
 
-        const result = await lighthouse(
-          `http://localhost:${PORT}${p}`,
-          {
-            port: chrome.port,
-            output: 'json',
-            logLevel: 'error',
+        for (let attempt = 1; attempt <= LH_RUNS; attempt++) {
+          if (clearCache) await clearCache();
 
-            ...(SEED_LEAD ? { disableStorageReset: true } : {}),
-          } as never,
-          undefined as never
-        );
-        if (!result) throw new Error(`Lighthouse не вернул результат для ${locale}`);
-        const lhr = result.lhr;
-        const cat = lhr.categories;
-        const audits = lhr.audits;
+          const result = await lighthouse(
+            `http://localhost:${PORT}${p}`,
+            {
+              port: chrome.port,
+              output: 'json',
+              logLevel: 'error',
 
-        const perf = Math.round((cat.performance.score ?? 0) * 100);
-        const a11y = Math.round((cat.accessibility.score ?? 0) * 100);
-        const bp = Math.round((cat['best-practices'].score ?? 0) * 100);
-        const seo = Math.round((cat.seo.score ?? 0) * 100);
+              ...(SEED_LEAD ? { disableStorageReset: true } : {}),
+              throttling: throttlingSettings,
+            } as never,
+            undefined as never
+          );
+          if (!result) throw new Error(`Lighthouse не вернул результат для ${locale}`);
+          const r = result.lhr as LhrLike;
+          const applied = r.configSettings?.throttling;
+          if (
+            applied?.cpuSlowdownMultiplier !== cpu.multiplier ||
+            applied?.rttMs !== lhThrottling.mobileSlow4G.rttMs ||
+            applied?.throughputKbps !== lhThrottling.mobileSlow4G.throughputKbps
+          ) {
+            throw new Error(
+              `Lighthouse применил не те настройки замедления (${JSON.stringify(applied)}), ` +
+                `ожидались процессор ${cpu.multiplier}× и сеть мобильного 4G — это отказ прибора, а не замер`,
+            );
+          }
+          const rc = r.categories;
+          const ra = r.audits;
 
-        const lcpRaw = audits['largest-contentful-paint']?.numericValue;
-        if (typeof lcpRaw !== 'number' || !Number.isFinite(lcpRaw)) {
-          throw new Error(
-            `Lighthouse не отдал LCP для ${locale}. Это отказ измерения, а не хороший результат.`,
+          const raw = ra['largest-contentful-paint']?.numericValue;
+          if (typeof raw !== 'number' || !Number.isFinite(raw)) {
+            throw new Error(
+              `Lighthouse не отдал LCP для ${locale} (прогон ${attempt} из ${LH_RUNS}). ` +
+                'Это отказ измерения, а не хороший результат.',
+            );
+          }
+
+          let hits = 0;
+          if (clarityBuilt) {
+            const netItems =
+              ((ra['network-requests']?.details as { items?: { url?: string }[] } | undefined)
+                ?.items ?? []);
+            hits = clarityRequests(netItems);
+          }
+
+          samples.push({
+            perf: Math.round((rc.performance.score ?? 0) * 100),
+            a11y: Math.round((rc.accessibility.score ?? 0) * 100),
+            bp: Math.round((rc['best-practices'].score ?? 0) * 100),
+            seo: Math.round((rc.seo.score ?? 0) * 100),
+            lcpSeconds: raw / 1000,
+            cls: ra['cumulative-layout-shift'].displayValue ?? '',
+            tbt: ra['total-blocking-time'].displayValue ?? '',
+            clarityHits: hits,
+            lhr: r,
+          });
+        }
+
+        const ordered = [...samples].sort((x, y) => x.perf - y.perf);
+        const median = ordered[Math.floor(ordered.length / 2)]!;
+
+        if (LH_RUNS > 1) {
+          console.log(
+            `  ${locale}: повторы perf ${samples.map((s) => s.perf).join(' / ')}` +
+              `  LCP ${samples.map((s) => s.lcpSeconds.toFixed(2)).join(' / ')}с` +
+              `  → медиана perf ${median.perf}`,
           );
         }
-        const lcpSeconds = lcpRaw / 1000;
-        const cls = audits['cumulative-layout-shift'].displayValue ?? '';
-        const tbt = audits['total-blocking-time'].displayValue ?? '';
+
+        const lhr = median.lhr;
+        const audits = lhr.audits;
+
+        const perf = median.perf;
+        const a11y = median.a11y;
+        const bp = median.bp;
+        const seo = median.seo;
+
+        const lcpSeconds = median.lcpSeconds;
+        const cls = median.cls;
+        const tbt = median.tbt;
 
         const bad: string[] = [];
         if (perf < THRESHOLDS.perf) bad.push(`perf ${perf} < ${THRESHOLDS.perf}`);
@@ -252,10 +342,7 @@ async function main(): Promise<void> {
 
         let clarityHits = 0;
         if (clarityBuilt) {
-          const netItems =
-            ((audits['network-requests']?.details as { items?: { url?: string }[] } | undefined)
-              ?.items ?? []);
-          clarityHits = clarityRequests(netItems);
+          clarityHits = Math.max(...samples.map((s) => s.clarityHits));
           if (clarityHits === 0) {
             throw new Error(
               `Lighthouse не увидел ни одного запроса к clarity.ms на локали ${locale}, ` +

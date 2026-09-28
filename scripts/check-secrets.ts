@@ -33,7 +33,8 @@ function argValues(name: string, fallback: string[]): string[] {
 
 const configArg = argValue('config', 'astro.config.mjs');
 const distArg = argValue('dist', 'dist');
-const sourceRoots = argValues('scan-source', ['workers']);
+
+const sourceRoots = argValues('scan-source', ['workers', 'functions', 'src/server']);
 
 const SECRET_NAME_PATTERN = /(_TOKEN|_SECRET|_KEY|CHAT_ID)$/;
 
@@ -459,7 +460,7 @@ function main(): void {
 
   console.log(
     '\nPASS: секретов нет — ни по имени в схеме, ни значением в бандле, ни формой ' +
-      'ни в бандле, ни в исходниках воркера.',
+      `ни в бандле, ни в исходниках (${sourceRoots.join(', ')}).`,
   );
 }
 

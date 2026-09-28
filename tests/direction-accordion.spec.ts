@@ -1,5 +1,6 @@
 
 import { test, expect, type Page } from '@playwright/test';
+import { waitSettled } from './lib/settle.ts';
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
 import { PAGE_ROUTES, type Locale } from '../src/i18n/routes';
@@ -356,6 +357,23 @@ test.describe('DirectionCards — плитки «Что получает пар�
     }
   });
 
+  test('словари: каждый заголовок пункта needs кончается двоеточием', () => {
+    for (const locale of ALL_LOCALES) {
+      const raw = JSON.parse(
+        readFileSync(path.join(process.cwd(), 'src', 'i18n', `${locale}.json`), 'utf-8'),
+      ) as { dialog: Record<string, { needs: Record<string, { lead: string }> }> };
+      let checked = 0;
+      for (const program of PROGRAMS) {
+        for (let i = 0; i < 5; i++) {
+          const lead = raw.dialog[program].needs[String(i)].lead;
+          expect(lead.endsWith(':'), `${locale}/dialog.${program}.needs.${i}.lead без двоеточия: "${lead}"`).toBe(true);
+          checked++;
+        }
+      }
+      expect(checked, `для ${locale} проверено не 15 пунктов`).toBe(15);
+    }
+  });
+
   for (const locale of ALL_LOCALES) {
     test(`[${locale}] 1440: у каждого пункта «Что нужно?» lead и tail лежат в одном grid-элементе`, async ({
       page,
@@ -542,13 +560,26 @@ test.describe('Вид карточек, разбор 28.08.2026', () => {
             if (!node || node.nodeType !== Node.TEXT_NODE) return;
             const text = node.textContent ?? '';
 
-            const re = /[^\s-]+-?/g;
+            const re = /[^\s\-­]+[-­]?/g;
             let m: RegExpExecArray | null;
             while ((m = re.exec(text))) {
               const range = document.createRange();
               range.setStart(node, m.index);
               range.setEnd(node, m.index + m[0].length);
-              const rects = range.getClientRects().length;
+
+              let hyphenTop = Number.NaN;
+              if (m.index > 0 && text[m.index - 1] === '­') {
+                const hr = document.createRange();
+                hr.setStart(node, m.index - 1);
+                hr.setEnd(node, m.index);
+                const drawn = [...hr.getClientRects()].find((r) => r.width > 0);
+                if (drawn) hyphenTop = Math.round(drawn.top);
+              }
+              const rects = new Set(
+                [...range.getClientRects()]
+                  .filter((r) => r.width > 0 && Math.round(r.top) !== hyphenTop)
+                  .map((r) => Math.round(r.top)),
+              ).size;
               checked++;
               if (rects > 1) bad.push({ text: text.trim(), word: m[0], rects });
             }
@@ -793,6 +824,8 @@ test.describe('Стрелка закрывает раскрытую карточ
           const details = page.locator(detailsSelector(program));
           await page.locator(`${summarySelector(program)} .direction-summary-copy`).click();
           await expect(details).toHaveJSProperty('open', true);
+
+          await waitSettled(page, detailsSelector(program));
 
           const point = await caretPoint(page, program);
           expect(
@@ -1176,6 +1209,32 @@ test.describe('Плитка «Что получает партнёр?»: зна�
     }
   }
 
+  test('значок плитки на телефоне МЕНЬШЕ, чем на десктопе — медиазапрос кегля жив', async ({
+    page,
+  }) => {
+    const razmery = async (width: number): Promise<number[]> => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(PAGE_ROUTES.home.ru);
+      await page.evaluate(() => document.fonts.ready);
+      await openAllCards(page);
+      const tiles = await geometry(page);
+      expect(tiles.length, `на ширине ${width} плиток не восемнадцать — мерить нечего`).toBe(18);
+      return tiles.map((t) => t.markSize);
+    };
+
+    const telefon = await razmery(390);
+    const desktop = await razmery(1440);
+
+    expect(new Set(telefon).size, `390: плитки дали разные кегли значка — ${telefon.join(', ')}`).toBe(1);
+    expect(new Set(desktop).size, `1440: плитки дали разные кегли значка — ${desktop.join(', ')}`).toBe(1);
+
+    expect(
+      telefon[0],
+      `кегль значка на 390 (${telefon[0]}) не меньше десктопного (${desktop[0]}) — ` +
+        'медиазапрос узких ширин перебит поздним правилом той же специфичности и мёртв',
+    ).toBeLessThan(desktop[0]!);
+  });
+
   test('360: значок остаётся сверху — боковая раскладка там не помещается', async ({ page }) => {
     await page.setViewportSize({ width: 360, height: 900 });
     await page.goto(PAGE_ROUTES.home.ru);
@@ -1275,7 +1334,8 @@ test.describe('Единый фон страницы и шапка под сод�
 
       await page.evaluate(() => {
         const name = document.querySelector('#direction-bank .direction-name') as HTMLElement;
-        window.scrollTo({ top: window.scrollY + name.getBoundingClientRect().top - 30 });
+
+        window.scrollTo({ top: window.scrollY + name.getBoundingClientRect().top - 30, behavior: 'instant' as ScrollBehavior });
       });
       await page.waitForTimeout(300);
 

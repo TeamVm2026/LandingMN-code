@@ -1,10 +1,22 @@
 
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+function argValue(name: string, fallback: string): string {
+  const argv = process.argv.slice(2);
+  const i = argv.indexOf(`--${name}`);
+  if (i === -1) return fallback;
+  const value = argv[i + 1];
+  if (!value || value.startsWith('--')) {
+    console.error(`FAIL: у аргумента --${name} нет значения`);
+    process.exit(1);
+  }
+  return value;
+}
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
-const SCAN_DIRS = ['src'];
+const SCAN_DIRS = [resolve(ROOT, argValue('src', 'src'))];
 
 const EXTENSIONS = ['.astro', '.css', '.ts', '.js'];
 const SKIP_DIRS = new Set(['node_modules', 'dist', '.git', '.astro']);
@@ -56,7 +68,7 @@ const problems: string[] = [];
 let scanned = 0;
 
 for (const dir of SCAN_DIRS) {
-  for (const file of walk(join(ROOT, dir))) {
+  for (const file of walk(dir)) {
     const rel = relative(ROOT, file).replace(/\\/g, '/');
     const text = stripComments(readFileSync(file, 'utf8'));
     scanned++;
@@ -102,6 +114,16 @@ for (const a of ALLOWED) {
     (m) => m[1].replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase() === a.property && MOVING_UNITS.test(m[2]),
   );
   if (!used) stale.push(`${a.file} (${a.property}) — динамических единиц там больше нет`);
+}
+
+if (scanned === 0) {
+  console.error(
+    'ИСХОДНИКИ НЕ ОСМОТРЕНЫ: обход не открыл ни одного файла ' +
+      `(корень ${SCAN_DIRS.join(', ')}, расширения ${EXTENSIONS.join(', ')}).\n` +
+      'Отсутствие dvh в непрочитанных файлах сертифицировать нельзя: скорее всего\n' +
+      'переехал каталог или появилось новое расширение (.mts, .svelte).',
+  );
+  process.exit(1);
 }
 
 if (problems.length > 0) {

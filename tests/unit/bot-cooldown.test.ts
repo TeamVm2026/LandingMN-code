@@ -16,7 +16,8 @@ const modulePath = path.join(botDir, 'cooldown.ts');
 
 const {
   hitCooldown,
-  hitUpdateOnce,
+  seenUpdate,
+  markUpdate,
   BOT_COOLDOWN_SECONDS,
   BOT_OTHER_COOLDOWN_SECONDS,
   BOT_UPDATE_DEDUP_SECONDS,
@@ -224,46 +225,59 @@ test('ИЗОЛЯЦИЯ: модуль не импортирует значени�
   assert.ok(!/\bcaches\b/.test(source), 'модуль обратился к глобальному caches');
 });
 
-test('ДЕДУП: первый update_id проходит, повторный отсекается', async () => {
-  const { kv, puts } = fakeKv();
-  const first = await hitUpdateOnce(kv, 777);
-  const again = await hitUpdateOnce(kv, 777);
+function markPut(puts: RecordedPut[], updateId: number): RecordedPut | undefined {
+  return puts.find((p) => p.key === `botupd:${String(updateId)}`);
+}
 
-  assert.equal(first, true, 'РЕТРАЙ-НЕ-ОТСЕЧЁН: первый апдейт не пропущен');
+test('ДЕДУП: помеченный update_id опознаётся повтором, непомеченный — нет', async () => {
+  const { kv, puts } = fakeKv();
+  assert.equal(await seenUpdate(kv, 777), false, 'РЕТРАЙ-НЕ-ОТСЕЧЁН: непомеченный апдейт объявлен повтором');
+  await markUpdate(kv, 777);
   assert.equal(
-    again,
-    false,
-    'РЕТРАЙ-НЕ-ОТСЕЧЁН: повтор той же доставки прошёл конвейер второй раз — ' +
+    await seenUpdate(kv, 777),
+    true,
+    'РЕТРАЙ-НЕ-ОТСЕЧЁН: повтор той же доставки не опознан — ' +
       'окно охлаждения опубликует ложную пометку «повторный лид»',
   );
-  assert.equal(puts.length, 1, 'метка апдейта записана дважды');
-  assert.equal(puts[0]?.key, 'botupd:777', 'ключ метки апдейта не той формы');
+  assert.equal(puts.filter((p) => p.key === 'botupd:777').length, 1, 'метка апдейта записана не один раз');
+  assert.ok(markPut(puts, 777), 'ключ метки апдейта не той формы');
 });
 
-test('ДЕДУП: апдейт без идентификатора проходит и НЕ пишет в KV', async () => {
+test('ДЕДУП: чтение метки не пишет в KV ни разу', async () => {
   const { kv, puts } = fakeKv();
-  assert.equal(await hitUpdateOnce(kv, null), true, 'апдейт без update_id потерян');
+  for (let id = 1; id <= 50; id++) await seenUpdate(kv, id);
+  assert.equal(puts.length, 0, 'ФЛУД-ВЫЧЕРПЫВАЕТ-KV: проверка метки стоила записи KV');
+});
+
+test('ДЕДУП: апдейт без идентификатора не повтор и НЕ пишет в KV', async () => {
+  const { kv, puts } = fakeKv();
+  assert.equal(await seenUpdate(kv, null), false, 'апдейт без update_id потерян');
+  await markUpdate(kv, null);
   assert.equal(puts.length, 0, 'запись сделана по ключу без идентификатора');
 });
 
 test('ДЕДУП: окно измеряется минутами, а не сутками', async () => {
   const { kv, puts } = fakeKv();
-  await hitUpdateOnce(kv, 42);
+  await markUpdate(kv, 42);
 
   assert.ok(BOT_UPDATE_DEDUP_SECONDS >= 60, 'меньше минуты KV не принимает вовсе');
   assert.ok(
     BOT_UPDATE_DEDUP_SECONDS < BOT_COOLDOWN_SECONDS,
     'окно дедупликации доросло до окна охлаждения: оно закрывает ретраи Telegram, а не поведение человека',
   );
-  assert.equal(puts[0]?.options?.expirationTtl, BOT_UPDATE_DEDUP_SECONDS, 'срок метки апдейта не тот');
+  assert.equal(
+    markPut(puts, 42)?.options?.expirationTtl,
+    BOT_UPDATE_DEDUP_SECONDS,
+    'срок метки апдейта не тот',
+  );
 });
 
-test('ДЕДУП: сбой хранилища не теряет апдейт', async () => {
+test('ДЕДУП: сбой хранилища не теряет апдейт и не роняет конвейер', async () => {
   const onRead = fakeKv();
   onRead.flags.failGet = true;
-  assert.equal(await hitUpdateOnce(onRead.kv, 5), true, 'сбой чтения потерял апдейт');
+  assert.equal(await seenUpdate(onRead.kv, 5), false, 'сбой чтения объявил апдейт повтором — он потерян');
 
   const onWrite = fakeKv();
   onWrite.flags.failPut = true;
-  assert.equal(await hitUpdateOnce(onWrite.kv, 5), true, 'сбой записи потерял апдейт');
+  await assert.doesNotReject(markUpdate(onWrite.kv, 5), 'сбой записи метки уронил конвейер');
 });

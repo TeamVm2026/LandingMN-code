@@ -4,15 +4,21 @@
     "description": "Three ways to earn with MELBET in Mongolia: bring people in, handle money transfers, or help others from your phone. payouts in tugriks, a reply in 15 minutes.",
     "og_title": "Become a MELBET partner in Mongolia"
   },
+  "header": {
+    "nav_label": "Main navigation",
+    "lang_group_label": "Language"
+  },
   "hero": {
     "h1": "Earn together with MELBET",
     "response_time": "We reply within 15 minutes",
     "response_hours": "15:00–23:00 Ulaanbaatar time",
     "stat_partners": {
+      "lead": "",
       "value": "300,000+",
       "label": "Partners worldwide"
     },
     "stat_share": {
+      "lead": "",
       "value": "up to 50%",
       "label": "Of revenue from referred players"
     }
@@ -111,11 +117,26 @@
       },
       "needs_title": "What do you need to earn?",
       "needs": {
-        "0": { "lead": "An audience", "tail": "a channel, group, blog or website" },
-        "1": { "lead": "Regular content", "tail": "posts and videos with your link" },
-        "2": { "lead": "Understanding your audience", "tail": "their geography, interests and language" },
-        "3": { "lead": "Advertising rules", "tail": "of the brand and your region" },
-        "4": { "lead": "No experience needed", "tail": "we train you and provide materials" }
+        "0": {
+          "lead": "An audience:",
+          "tail": "a channel, group, blog or website"
+        },
+        "1": {
+          "lead": "Regular content:",
+          "tail": "posts and videos with your link"
+        },
+        "2": {
+          "lead": "Understanding your audience:",
+          "tail": "their geography, interests and language"
+        },
+        "3": {
+          "lead": "Advertising rules:",
+          "tail": "of the brand and your region"
+        },
+        "4": {
+          "lead": "No experience needed:",
+          "tail": "we train you and provide materials"
+        }
       }
     },
     "bank": {
@@ -142,11 +163,26 @@
       },
       "needs_title": "What do you need to earn?",
       "needs": {
-        "0": { "lead": "A payment method", "tail": "an account or wallet in Mongolia for receiving and sending" },
-        "1": { "lead": "Verification details", "tail": "an individual or a company both work" },
-        "2": { "lead": "Working capital", "tail": "discuss the amount with your manager" },
-        "3": { "lead": "Available around the clock", "tail": "you can work as a team, in shifts" },
-        "4": { "lead": "A computer and internet", "tail": "a phone works too, but a computer is more convenient" }
+        "0": {
+          "lead": "A payment method:",
+          "tail": "an account or wallet in Mongolia for receiving and sending"
+        },
+        "1": {
+          "lead": "Verification details:",
+          "tail": "an individual or a company both work"
+        },
+        "2": {
+          "lead": "Working capital:",
+          "tail": "discuss the amount with your manager"
+        },
+        "3": {
+          "lead": "Available around the clock:",
+          "tail": "you can work as a team, in shifts"
+        },
+        "4": {
+          "lead": "A computer and internet:",
+          "tail": "a phone works too, but a computer is more convenient"
+        }
       }
     },
     "teamcash": {
@@ -173,11 +209,26 @@
       },
       "needs_title": "What do you need to earn?",
       "needs": {
-        "0": { "lead": "A smartphone with the app", "tail": "every operation runs through Team Cash" },
-        "1": { "lead": "A balance in the app", "tail": "it funds deposits for clients" },
-        "2": { "lead": "Money for payouts", "tail": "cash or transfer, whatever suits the client" },
-        "3": { "lead": "Your own audience", "tail": "social media, people you know, or your own spot in Mongolia" },
-        "4": { "lead": "Time to stay in touch", "tail": "clients reach out whenever it suits them" }
+        "0": {
+          "lead": "A smartphone with the app:",
+          "tail": "every operation runs through Team Cash"
+        },
+        "1": {
+          "lead": "A balance in the app:",
+          "tail": "it funds deposits for clients"
+        },
+        "2": {
+          "lead": "Money for payouts:",
+          "tail": "cash or transfer, whatever suits the client"
+        },
+        "3": {
+          "lead": "Your own audience:",
+          "tail": "social media, people you know, or your own spot in Mongolia"
+        },
+        "4": {
+          "lead": "Time to stay in touch:",
+          "tail": "clients reach out whenever it suits them"
+        }
       }
     }
   },
@@ -212,7 +263,7 @@
       },
       "3": {
         "heading": "Analytics and cookies",
-        "body": "To see where visitors come from and which parts of the page actually help them, we use Google Analytics 4, Microsoft Clarity, Cloudflare Web Analytics and the BeMob click tracker. The recipients of this data are Google LLC, Microsoft Corporation and Cloudflare, Inc. What we collect is anonymous statistics: pages viewed and actions taken on the site, the referral source, device type and language. Your name, phone number and messenger handle never reach analytics: they travel through the form only, and only to a manager. The referral tag is kept in your own browser (localStorage) for up to 90 days - the same period we keep a request. You can opt out through your own browser: private browsing, a content blocker, or by disallowing site data. Visitors from the European Economic Area, the UK and Switzerland are not counted at all by default: there, collection starts only with their own decision. If you made such a decision, you can change it with the button below, in this same section."
+        "body": "To see where visitors come from and which parts of the page actually help them, we use Google Analytics 4, Microsoft Clarity, Cloudflare Web Analytics and the BeMob click tracker. The recipients of this data are Google LLC, Microsoft Corporation and Cloudflare, Inc. What we collect is anonymous statistics: pages viewed and actions taken on the site, the referral source, device type and language. Your name, phone number and messenger handle never reach analytics: they travel through the form only, and only to a manager. The referral tag is kept in your own browser (localStorage) for up to 90 days - the same period we keep a request. You can opt out through your own browser: private browsing, a content blocker, or by disallowing site data. For visitors from the European Economic Area, the UK and Switzerland, Microsoft Clarity runs without cookies by default: it records the course of a visit — scrolling and clicks — but does not recognise a returning visitor. Analytics cookies and Google Analytics statistics start there only with their own decision. If you made such a decision, you can change it with the button below, in this same section."
       },
       "4": {
         "heading": "Your rights & contact",
@@ -222,7 +273,7 @@
     "notfound_h1": "Page not found",
     "notfound_body": "The page you're looking for doesn't exist or has moved.",
     "notfound_cta": "Back to home",
-    "privacy_updated": "Updated: 13 August 2026",
+    "privacy_updated": "Updated: 21 August 2026",
     "privacy_back": "Back to the main page",
     "privacy_contact_link": "Message us on Telegram",
     "thanks_h1": "Request received",
@@ -234,7 +285,6 @@
   },
   "contact": {
     "telegram": "Telegram",
-    "messenger": "FB Messenger",
     "messenger_short": "Facebook"
   },
   "consent": {

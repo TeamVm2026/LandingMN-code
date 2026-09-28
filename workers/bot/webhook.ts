@@ -3,7 +3,7 @@ import { parseUpdate } from './update.ts';
 import type { ParsedUpdate } from './update.ts';
 import { buildReply } from './reply.ts';
 import { buildBotLeadNotice, buildRepeatNotice } from './notice.ts';
-import { hitCooldown, hitUpdateOnce } from './cooldown.ts';
+import { hitCooldown, markUpdate, seenUpdate } from './cooldown.ts';
 import type { BotKv, CooldownBucket, CooldownVerdict } from './cooldown.ts';
 import { writeBotLead } from './journal.ts';
 import type { BotJournalEntry, BotJournalKv } from './journal.ts';
@@ -11,6 +11,7 @@ import { bumpCounter } from '../../src/server/report/counters.ts';
 import { DEFAULT_LOCALE } from '../../src/lib/lead-contract.ts';
 import {
   TELEGRAM_ATTEMPT_TIMEOUT_MS,
+  allowedApiBase,
   classifyTelegramResult,
   deliverWithRetries,
   sendMessage,
@@ -50,22 +51,20 @@ export interface WebhookDeps {
   now?: () => number;
 }
 
-export const REQUIRED_INPUTS = [
-  'LEADS',
-  'TG_BOT_TOKEN',
-  'TG_CHAT_ID',
-  'TG_WEBHOOK_SECRET',
-  'MANAGER_CONTACT_URL',
-] as const;
+export const REQUIRED_INPUT_CHECKS = {
+  LEADS: (env: BotEnv): boolean => env.LEADS !== undefined && env.LEADS !== null,
+  TG_BOT_TOKEN: (env: BotEnv): boolean => (env.TG_BOT_TOKEN ?? '').trim() !== '',
+  TG_CHAT_ID: (env: BotEnv): boolean => (env.TG_CHAT_ID ?? '').trim() !== '',
+  TG_WEBHOOK_SECRET: (env: BotEnv): boolean => (env.TG_WEBHOOK_SECRET ?? '').trim() !== '',
+  MANAGER_CONTACT_URL: (env: BotEnv): boolean => (env.MANAGER_CONTACT_URL ?? '').trim() !== '',
+} as const satisfies Record<string, (env: BotEnv) => boolean>;
+
+export const REQUIRED_INPUTS = Object.keys(REQUIRED_INPUT_CHECKS) as readonly (keyof typeof REQUIRED_INPUT_CHECKS)[];
 
 export function missingRequiredInputs(env: BotEnv): string[] {
-  const missing: string[] = [];
-  if (env.LEADS === undefined || env.LEADS === null) missing.push('LEADS');
-  if ((env.TG_BOT_TOKEN ?? '').trim() === '') missing.push('TG_BOT_TOKEN');
-  if ((env.TG_CHAT_ID ?? '').trim() === '') missing.push('TG_CHAT_ID');
-  if ((env.TG_WEBHOOK_SECRET ?? '').trim() === '') missing.push('TG_WEBHOOK_SECRET');
-  if ((env.MANAGER_CONTACT_URL ?? '').trim() === '') missing.push('MANAGER_CONTACT_URL');
-  return missing;
+  return Object.entries(REQUIRED_INPUT_CHECKS)
+    .filter(([, isPresent]) => !isPresent(env))
+    .map(([name]) => name);
 }
 
 export function timingSafeEqualStr(a: string, b: string): boolean {
@@ -133,7 +132,7 @@ async function tellTechChat(env: BotEnv, deps: WebhookDeps, text: string): Promi
       chatId: techChat,
       text,
       fetchImpl: deps.fetchImpl ?? ((url, init) => fetch(url, init)),
-      apiBase: env.TG_API_BASE,
+      apiBase: allowedApiBase(env.TG_API_BASE),
       timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
       parseMode: null,
     });
@@ -191,7 +190,7 @@ export async function handleWebhook(
     if (parsed.kind === 'ignore') return plain(200);
     if (parsed.chatId === null) return plain(200);
 
-    if (!(await hitUpdateOnce(kv, parsed.updateId))) {
+    if (await seenUpdate(kv, parsed.updateId)) {
       await tellTechChat(
         env,
         deps,
@@ -208,6 +207,8 @@ export async function handleWebhook(
     if (parsed.kind === 'other') {
       const verdict = await hitCooldown(kv, bucket, parsed.user.id, now);
       if (verdict.kind !== 'new') return plain(200);
+
+      await markUpdate(kv, parsed.updateId);
       const answered = await replyToVisitor({
         token,
         chatId: visitorChat,
@@ -215,7 +216,7 @@ export async function handleWebhook(
         payload: null,
         languageCode: parsed.user.languageCode,
         fetchImpl,
-        apiBase: env.TG_API_BASE,
+        apiBase: allowedApiBase(env.TG_API_BASE),
       });
 
       chaseVisitorReply({
@@ -231,12 +232,6 @@ export async function handleWebhook(
       return plain(200);
     }
 
-    try {
-      await bumpCounter(kv, 'start', now);
-    } catch {
-      /* */
-    }
-
     const answered = await replyToVisitor({
       token,
       chatId: visitorChat,
@@ -244,7 +239,7 @@ export async function handleWebhook(
       payload: parsed.payload,
       languageCode: parsed.user.languageCode,
       fetchImpl,
-      apiBase: env.TG_API_BASE,
+      apiBase: allowedApiBase(env.TG_API_BASE),
     });
     const contactDelivered = answered.failure === null;
 
@@ -262,9 +257,18 @@ export async function handleWebhook(
     const verdict: CooldownVerdict = await hitCooldown(kv, bucket, parsed.user.id, now);
     if (verdict.kind === 'silent') return plain(200);
 
+    await markUpdate(kv, parsed.updateId);
+
     let entry: BotJournalEntry | null = null;
     let text: string;
     if (verdict.kind === 'new') {
+
+      try {
+        await bumpCounter(kv, 'start', now);
+      } catch {
+        /* */
+      }
+
       entry = await writeBotLead(
         kv,
         {
@@ -315,7 +319,7 @@ export async function handleWebhook(
       chatId: managersChat,
       text,
       fetchImpl,
-      apiBase: env.TG_API_BASE,
+      apiBase: allowedApiBase(env.TG_API_BASE),
       timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
     });
     const disposition = classifyTelegramResult(first, 1);
@@ -329,7 +333,7 @@ export async function handleWebhook(
           text,
           fetchImpl,
           sleep: deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))),
-          apiBase: env.TG_API_BASE,
+          apiBase: allowedApiBase(env.TG_API_BASE),
           timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
           attemptsAlreadyMade: 1,
           nextDelayMs: disposition.kind === 'retry' ? disposition.delayMs : 0,
@@ -419,7 +423,7 @@ function chaseVisitorReply(options: {
           replyMarkup: options.outcome.replyMarkup,
           fetchImpl: options.fetchImpl,
           sleep: options.deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms))),
-          apiBase: options.env.TG_API_BASE,
+          apiBase: allowedApiBase(options.env.TG_API_BASE),
           timeoutMs: TELEGRAM_ATTEMPT_TIMEOUT_MS,
           attemptsAlreadyMade: 1,
           nextDelayMs: failure.delayMs,
