@@ -997,20 +997,47 @@ test.describe('Блок блогеров — телефонная расклад
       // болезнь («у полосы свой фон, тёплое пятно B−R = −48») этим закрыта не
       // хуже: любой второй кадр или кадр без класса `.scene-layer--hills`
       // роняет замок.
+      //
+      // ⚠️ 28.09.2026 (заход 20260928-hills-mobile): кадров в РАЗМЕТКЕ два —
+      // тот же файл гряды, второй слой рисует её целиком только на телефоне
+      // (заказчик: «гора сзади какая то супер некачественно ровная» → «Давай
+      // как предлагаешь»). Обещание не ослаблено: оба обязаны быть слоями
+      // утверждённой сцены, на десктопе в раскладке по-прежнему РОВНО ОДИН, а
+      // файл гряды браузер качает один раз на любой ширине.
       const decor = await page.evaluate(() =>
         [...document.querySelectorAll('section.partners [aria-hidden="true"]')]
           .filter((el) => el.querySelector('img, picture'))
-          .map((el) => el.className),
+          .map((el) => ({
+            mod: [...el.classList].find((c) => c.startsWith('scene-layer--')) ?? el.className,
+            rendered: el.getClientRects().length > 0,
+          })),
       );
       expect(
-        decor.length,
-        `на ${width} внутри полосы партнёров ${decor.length} декоративных кадров вместо одного: ` +
-          decor.join(' | '),
-      ).toBe(1);
+        decor.map((d) => d.mod).sort(),
+        `на ${width} внутри полосы партнёров не те декоративные кадры: ` +
+          decor.map((d) => d.mod).join(' | '),
+      ).toEqual(['scene-layer--hills', 'scene-layer--hills-band']);
       expect(
-        decor[0],
-        `на ${width} кадр внутри полосы — не слой утверждённой сцены: «${decor[0]}»`,
-      ).toContain('scene-layer--hills');
+        decor.filter((d) => d.rendered).map((d) => d.mod).sort(),
+        `на ${width} в раскладке не те кадры гряды`,
+      ).toEqual(
+        width >= 860 ? ['scene-layer--hills'] : ['scene-layer--hills', 'scene-layer--hills-band'],
+      );
+      await page.waitForFunction(() =>
+        [...document.querySelectorAll<HTMLImageElement>('section.partners .scene-layer img')]
+          .filter((img) => img.getClientRects().length > 0)
+          .every((img) => img.complete && img.naturalWidth > 0),
+      );
+      const hillsLoads = await page.evaluate(
+        () =>
+          new Set(
+            performance
+              .getEntriesByType('resource')
+              .map((e) => e.name)
+              .filter((n) => /scene-hills-lights/.test(n)),
+          ).size,
+      );
+      expect(hillsLoads, `на ${width} файл гряды скачан не один раз`).toBe(1);
 
       // Секция не красит себя сама: она стоит на сквозной краске страницы.
       const bg = await page.locator('section.partners').evaluate((el) => {

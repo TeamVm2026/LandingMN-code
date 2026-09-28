@@ -74,6 +74,14 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
     cover
   />
 
+  <SceneLayer
+    src={hillsLights}
+    modifier="scene-layer--hills-band"
+    sizes="(min-width: 2600px) 100vw, 2600px"
+    widths={[1280, 1920, 2560, 3200, 3840]}
+    quality={55}
+  />
+
   <div class="container">
     <h2 id="partners-title" class="type-h2 partners-title">{t(locale, 'partners.title')}</h2>
   </div>
@@ -142,20 +150,33 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
     --sl-h: calc(100% + 190px + 286px);
     --sl-w: 100%;
     --sl-opacity: 0.9;
-    -webkit-mask-image: linear-gradient(
-      180deg,
-      transparent 0,
-      #000 340px,
-      #000 calc(100% - 10px),
-      rgba(0, 0, 0, 0.909) 100%
-    );
-    mask-image: linear-gradient(
-      180deg,
-      transparent 0,
-      #000 340px,
-      #000 calc(100% - 10px),
-      rgba(0, 0, 0, 0.909) 100%
-    );
+
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 340px, #000 40%, transparent 55%);
+    mask-image: linear-gradient(180deg, transparent 0, #000 340px, #000 40%, transparent 55%);
+  }
+
+  .partners > :global(.scene-layer--hills-band) {
+    --sl-top: -190px;
+    --sl-h: calc(100% + 190px + 286px);
+    --sl-w: 100%;
+    --sl-opacity: 0.9;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, transparent 38%, #000 58%, #000 calc(100% - 10px), rgba(0, 0, 0, 0.909) 100%);
+    mask-image: linear-gradient(180deg, transparent 0, transparent 38%, #000 58%, #000 calc(100% - 10px), rgba(0, 0, 0, 0.909) 100%);
+  }
+
+  .partners > :global(.scene-layer--hills-band picture) {
+    position: relative;
+    height: 100%;
+  }
+
+  .partners > :global(.scene-layer--hills-band img) {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 300%;
+    max-width: none;
+    height: auto;
+    translate: -50% 0;
   }
 
   .partners > :global(.scene-layer--hills) {
@@ -163,6 +184,11 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
   }
 
   @media (min-width: 860px) {
+
+    .partners > :global(.scene-layer--hills-band) {
+      display: none;
+    }
+
     .partners > :global(.scene-layer--hills) {
       --sl-top: -270px;
       --sl-h: calc(100% + 270px + 187px);

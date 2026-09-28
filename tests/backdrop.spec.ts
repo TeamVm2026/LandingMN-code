@@ -50,7 +50,14 @@ const APPROVED_LAYERS = [
   'scene-layer--veil-faq',
   'scene-layer--form',
   'scene-layer--hills',
+
+  'scene-layer--hills-band',
 ];
+
+const HIDDEN_AT: Record<number, string[]> = {
+  390: [],
+  1440: ['scene-layer--hills-band'],
+};
 
 const RETIRED_LAYERS = [
   '.scene-hills',
@@ -64,7 +71,7 @@ const RETIRED_LAYERS = [
 ];
 
 for (const width of [390, 1440] as const) {
-  test(`сцена — ровно семь утверждённых слоёв, ширина ${width}`, async ({ page }) => {
+  test(`сцена — ровно утверждённые слои, ширина ${width}`, async ({ page }) => {
     await prepare(page, width);
     const found = await page.evaluate(
       (approved) => {
@@ -74,6 +81,7 @@ for (const width of [390, 1440] as const) {
           hidden: l.getAttribute('aria-hidden'),
           z: getComputedStyle(l).zIndex,
           pos: getComputedStyle(l).position,
+          rendered: l.getClientRects().length > 0,
         }));
       },
       APPROVED_LAYERS as unknown as string[],
@@ -83,6 +91,10 @@ for (const width of [390, 1440] as const) {
       found.map((f) => f.mod).sort(),
       'состав сцены разошёлся с утверждённой спекой spec-desktop.json / spec-mobile.json',
     ).toEqual([...APPROVED_LAYERS].sort());
+    expect(
+      found.filter((f) => !f.rendered).map((f) => f.mod).sort(),
+      `на ${width} в раскладке не те слои: телефонная гряда живёт только до 859px`,
+    ).toEqual([...HIDDEN_AT[width]].sort());
 
     for (const f of found) {
       expect(
@@ -159,6 +171,7 @@ const LAYER_ANCHORS: [string, string][] = [
   ['scene-layer--veil-faq', '.page-surface'],
   ['scene-layer--form', '.lead-form'],
   ['scene-layer--hills', '.partners'],
+  ['scene-layer--hills-band', '.partners'],
 ];
 
 const SKY_LAYERS = [
@@ -180,7 +193,8 @@ for (const width of [390, 1440] as const) {
         for (const [mod, anchor] of pairs) {
           const l = document.querySelector(`.${mod}`);
           const a = document.querySelector(anchor);
-          if (!l || !a) continue;
+
+          if (!l || !a || l.getClientRects().length === 0) continue;
           out[mod] = Math.round(l.getBoundingClientRect().top - a.getBoundingClientRect().top);
         }
         return out;
@@ -191,7 +205,16 @@ for (const width of [390, 1440] as const) {
     await setCards(page, true);
     const open = await read();
 
-    for (const [mod] of LAYER_ANCHORS) {
+    expect(
+      Object.keys(closed).sort(),
+      `на ${width} замерены не все слои раскладки — замок мерил бы пустоту`,
+    ).toEqual(
+      LAYER_ANCHORS.map(([mod]) => mod)
+        .filter((mod) => !HIDDEN_AT[width].includes(mod))
+        .sort(),
+    );
+
+    for (const mod of Object.keys(closed)) {
 
       expect(
         open[mod],
