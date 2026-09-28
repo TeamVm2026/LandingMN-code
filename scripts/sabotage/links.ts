@@ -39,34 +39,39 @@ function listFiles(dir: string, prefix = ''): string[] {
   return found;
 }
 
+function copyRealDist(into: string): void {
+  rmSync(into, { recursive: true, force: true });
+
+  if (!existsSync(realDist)) {
+    throw new Error('нет каталога dist/ — сначала npm run build');
+  }
+  const files = listFiles(realDist);
+  if (files.length === 0) {
+    throw new Error('в dist/ нет ни одного файла — сборка пуста или идёт прямо сейчас');
+  }
+  for (const rel of files) {
+    const dest = path.join(into, rel);
+    mkdirSync(path.dirname(dest), { recursive: true });
+    writeFileSync(dest, readFileSync(path.join(realDist, rel)));
+  }
+}
+
+function requireGreen(argv: string[], why: string): void {
+  const run = spawnSync(process.execPath, argv, { cwd: projectRoot, encoding: 'utf8' });
+  if (run.status !== 0) {
+    throw new Error(`${why}:\n${run.stdout ?? ''}${run.stderr ?? ''}`);
+  }
+}
+
 const brokenInternalLink: SabotageCase = {
   id: 'links-internal-target-missing',
   gate: 'check:links',
   describe: `ссылка на ${LIVE_ROUTE} в подвале главной уехала на несуществующий адрес`,
 
   setup() {
-    rmSync(copyDir, { recursive: true, force: true });
+    copyRealDist(copyDir);
 
-    if (!existsSync(realDist)) {
-      throw new Error('нет каталога dist/ — сначала npm run build');
-    }
-    const files = listFiles(realDist);
-    if (files.length === 0) {
-      throw new Error('в dist/ нет ни одного файла — сборка пуста или идёт прямо сейчас');
-    }
-    for (const rel of files) {
-      const dest = path.join(copyDir, rel);
-      mkdirSync(path.dirname(dest), { recursive: true });
-      writeFileSync(dest, readFileSync(path.join(realDist, rel)));
-    }
-
-    const clean = spawnSync(process.execPath, GATE_ARGV, { cwd: projectRoot, encoding: 'utf8' });
-    if (clean.status !== 0) {
-      throw new Error(
-        'копия dist/ не зелёная ДО подстановки — падение гейта было бы не по делу:\n' +
-          `${clean.stdout ?? ''}${clean.stderr ?? ''}`,
-      );
-    }
+    requireGreen(GATE_ARGV, 'копия dist/ не зелёная ДО подстановки — падение гейта было бы не по делу');
 
     const target = path.join(copyDir, 'index.html');
     const original = readFileSync(target, 'utf8');
@@ -91,4 +96,51 @@ const brokenInternalLink: SabotageCase = {
   },
 };
 
-export const cases: SabotageCase[] = [brokenInternalLink];
+const glueCopyDir = path.join(projectRoot, '.sabotage-tmp', 'links-glue-dist');
+const GLUE_ARGV = ['--experimental-strip-types', 'scripts/check-links.ts', '--dist', argPath(glueCopyDir)];
+const UNDECLARED_ORIGIN = 'https://sabotage-undeclared.invalid';
+
+const glue = (second: string): string =>
+  `\n;var __sabotageA=\`https://t.me\`,__sabotageB=\`${second}\`;\n`;
+
+function firstChunk(dir: string): string {
+  const astroDir = path.join(dir, '_astro');
+  const js = existsSync(astroDir) ? readdirSync(astroDir).filter((n) => n.endsWith('.js')).sort() : [];
+  if (js.length === 0) throw new Error('в копии dist/_astro нет ни одного .js — сверять оригены в чанках нечем');
+  return path.join(astroDir, js[0]!);
+}
+
+const templateLiteralOrigin: SabotageCase = {
+  id: 'links-chunk-template-literal-origin',
+  gate: 'check:links',
+  describe:
+    'в чанке склеены шаблонные литералы `https://t.me`,`…` — заявленная пара не должна давать ложной тревоги, незаявленный хост должен быть назван',
+
+  setup() {
+    copyRealDist(glueCopyDir);
+    requireGreen(GLUE_ARGV, 'копия dist/ не зелёная ДО подстановки — падение гейта было бы не по делу');
+
+    const chunk = firstChunk(glueCopyDir);
+    const original = readFileSync(chunk, 'utf8');
+
+    writeFileSync(chunk, original + glue('https://m.me'), 'utf8');
+    requireGreen(
+      GLUE_ARGV,
+      'ЛОЖНАЯ ТРЕВОГА: склейка двух заявленных оригенов в шаблонных литералах валит гейт — ' +
+        'обратная кавычка снова не считается концом адреса (scripts/check-links.ts, sweepOrigins)',
+    );
+
+    writeFileSync(chunk, original + glue(UNDECLARED_ORIGIN), 'utf8');
+  },
+
+  command: GLUE_ARGV,
+
+  expectOutputContains: `FAIL [ориген] ${UNDECLARED_ORIGIN}\n`,
+  greenRun: GREEN,
+
+  teardown() {
+    rmSync(glueCopyDir, { recursive: true, force: true });
+  },
+};
+
+export const cases: SabotageCase[] = [brokenInternalLink, templateLiteralOrigin];

@@ -12,6 +12,18 @@ export const ANALYTICS_ENABLED = PUBLIC_GA_ID !== '' || PUBLIC_CLARITY_ID !== ''
 
 export const TURNSTILE_ENABLED = PUBLIC_TURNSTILE_SITEKEY !== '';
 
+if (
+  import.meta.env.SSR &&
+  (__LANDINGMN_ANALYTICS_ON__ !== ANALYTICS_ENABLED || __LANDINGMN_TURNSTILE_ON__ !== TURNSTILE_ENABLED)
+) {
+  throw new Error(
+    'Флаги сборки разошлись с astro:env: ' +
+      `__LANDINGMN_ANALYTICS_ON__=${String(__LANDINGMN_ANALYTICS_ON__)} против ANALYTICS_ENABLED=${String(ANALYTICS_ENABLED)}, ` +
+      `__LANDINGMN_TURNSTILE_ON__=${String(__LANDINGMN_TURNSTILE_ON__)} против TURNSTILE_ENABLED=${String(TURNSTILE_ENABLED)}. ` +
+      'Разбор — у BUILD_FLAGS в astro.config.mjs.',
+  );
+}
+
 export const config = Object.freeze({
   siteUrl: PUBLIC_SITE_URL,
   messengerUrl: PUBLIC_MESSENGER_URL,

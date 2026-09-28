@@ -9,7 +9,6 @@ import {
   SUCCESS_ROUTE,
   type ErrorCode,
 } from '../../lib/lead-contract';
-import { TURNSTILE_ENABLED } from '../../config';
 import { writeLeadState } from './state.ts';
 import { revealFully } from './reveal.ts';
 import type { Locale } from '../../i18n/routes';
@@ -296,7 +295,7 @@ export function mountLeadSubmit(wiring: LeadSubmitWiring): void {
 
       showFailure(shape, fields);
 
-      if (TURNSTILE_ENABLED && code === ERROR_CODES.captchaFailed) {
+      if (__LANDINGMN_TURNSTILE_ON__ && code === ERROR_CODES.captchaFailed) {
         import('./turnstile.ts')
           .then((m) => {
             m.resetTurnstile();

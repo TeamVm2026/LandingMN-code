@@ -2,7 +2,7 @@
 import { setCommonParams, track } from './analytics/bus';
 import { maybeRegisterDebugSink } from './analytics/debug-sink';
 import { readAttribution, attributionSummary } from '../lib/attribution';
-import { ANALYTICS_ENABLED, TURNSTILE_ENABLED } from '../config';
+
 import { mountRepeatPanel, mountSuccessPanel } from './lead/repeat.ts';
 import { mountLeadSubmit, type SubmitErrorType } from './lead/submit.ts';
 
@@ -485,7 +485,7 @@ function startPayloadOf(el: HTMLElement): string | undefined {
 
       track('form_open', { placement, direction: selectedDirection() });
 
-      if (TURNSTILE_ENABLED) {
+      if (__LANDINGMN_TURNSTILE_ON__) {
 
         import('./lead/turnstile.ts')
           .then((m) => {
@@ -538,7 +538,7 @@ if (debugSinkOn) {
   window.__lmnEmit = { formSubmit: emitFormSubmit };
 }
 
-if (ANALYTICS_ENABLED) {
+if (__LANDINGMN_ANALYTICS_ON__) {
 
   mountConsentControl();
 

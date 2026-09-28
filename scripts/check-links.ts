@@ -298,7 +298,7 @@ const originsHtml = new Set<string>();
 const originsAsset = new Set<string>();
 
 function sweepOrigins(text: string, into: Set<string>): void {
-  for (const m of text.matchAll(/https?:\/\/[^\s"'<>)\\]+/g)) {
+  for (const m of text.matchAll(/https?:\/\/[^\s"'`<>)\\]+/g)) {
     try {
       into.add(new URL(m[0]).origin);
     } catch {

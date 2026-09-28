@@ -253,7 +253,7 @@ test.describe('запрос согласия: регион, показ, реше
     const build = withExclusiveBuildLock(() =>
       spawnSync(
         process.execPath,
-        [path.join(projectRoot, 'node_modules', 'astro', 'astro.js'), 'build', '--outDir', CONSENT_DIST],
+        [path.join(projectRoot, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build', '--outDir', CONSENT_DIST],
         {
           cwd: projectRoot,
           encoding: 'utf8',

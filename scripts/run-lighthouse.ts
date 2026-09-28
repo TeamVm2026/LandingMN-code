@@ -153,7 +153,7 @@ async function main(): Promise<void> {
   const server = spawn(
     process.execPath,
     [
-      path.join('node_modules', 'astro', 'astro.js'),
+      path.join('node_modules', 'astro', 'bin', 'astro.mjs'),
       'preview',
       '--port',
       String(PORT),

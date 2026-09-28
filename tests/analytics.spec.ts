@@ -445,7 +445,7 @@ test.describe('провайдеры при ПУСТЫХ идентификато
     const build = withExclusiveBuildLock(() =>
       spawnSync(
         process.execPath,
-        [path.join(projectRoot, 'node_modules', 'astro', 'astro.js'), 'build', '--outDir', EMPTY_DIST],
+        [path.join(projectRoot, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build', '--outDir', EMPTY_DIST],
         {
           cwd: projectRoot,
           encoding: 'utf8',
@@ -550,7 +550,7 @@ test.describe('провайдеры при ЗАДАННЫХ идентифика
     const build = withExclusiveBuildLock(() =>
       spawnSync(
         process.execPath,
-        [path.join(projectRoot, 'node_modules', 'astro', 'astro.js'), 'build', '--outDir', ANALYTICS_DIST],
+        [path.join(projectRoot, 'node_modules', 'astro', 'bin', 'astro.mjs'), 'build', '--outDir', ANALYTICS_DIST],
         {
           cwd: projectRoot,
           encoding: 'utf8',
