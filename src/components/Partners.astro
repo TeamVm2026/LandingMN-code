@@ -68,8 +68,9 @@ const alt = `${people.map((p) => p.name).join(', ')}`;
   <SceneLayer
     src={hillsLights}
     modifier="scene-layer--hills"
-    sizes="100vw"
-    widths={[900, 1400, 1600]}
+    sizes="(min-width: 2600px) 100vw, 2600px"
+    widths={[1280, 1920, 2560, 3200, 3840]}
+    quality={55}
     cover
   />
 

@@ -17,9 +17,11 @@ interface Props {
   cover?: boolean;
 
   repeat?: number;
+
+  quality?: number;
 }
 
-const { src, modifier, sizes, widths, eager = false, cover = false, repeat = 1 } = Astro.props;
+const { src, modifier, sizes, widths, eager = false, cover = false, repeat = 1, quality = 40 } = Astro.props;
 const copies = Array.from({ length: Math.max(1, repeat) });
 ---
 
@@ -37,7 +39,7 @@ const copies = Array.from({ length: Math.max(1, repeat) });
           formats={['avif', 'webp']}
           widths={widths}
           sizes={sizes}
-          quality={40}
+          quality={quality}
           alt=""
           loading="lazy"
           fetchpriority="low"
