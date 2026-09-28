@@ -1,6 +1,8 @@
 
 /// <reference types="@cloudflare/workers-types" />
 
+import { canonicalRedirectTarget } from '../src/server/canonical-redirect.ts';
+
 const SECURITY_HEADERS: Record<string, string> = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -11,7 +13,23 @@ const SECURITY_HEADERS: Record<string, string> = {
   'X-DNS-Prefetch-Control': 'off',
 };
 
-export const onRequest: PagesFunction = async (context) => {
+interface Env {
+  CANONICAL_ORIGIN?: string;
+}
+
+export const onRequest: PagesFunction<Env> = async (context) => {
+
+  const target = canonicalRedirectTarget(
+    context.request.url,
+    context.request.method,
+    context.env.CANONICAL_ORIGIN,
+  );
+  if (target) {
+    const headers = new Headers({ location: target, 'cache-control': 'public, max-age=3600' });
+    for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
+    return new Response(null, { status: 301, headers });
+  }
+
   const response = await context.next();
 
   const headers = new Headers(response.headers);
