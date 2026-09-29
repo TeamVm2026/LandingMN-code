@@ -93,6 +93,21 @@ export const COMPANION_SOURCES: ReadonlyArray<{
       'вставляет <script src="https://scripts.clarity.ms/…">. Без этой строки в день enforce ' +
       'умирает не «часть Clarity», а Clarity целиком — тег загрузится и не сделает ничего',
   },
+
+  {
+    source: 'https://static.cloudflareinsights.com',
+    directives: ['script-src'],
+    why:
+      'Cloudflare Web Analytics: маячок beacon.min.js, который Cloudflare вставляет в страницу сам. ' +
+      'Без этой строки в день enforce счётчик Cloudflare перестанет считать вовсе',
+  },
+  {
+    source: 'https://cloudflareinsights.com',
+    directives: ['connect-src'],
+    why:
+      'Cloudflare Web Analytics: маячок отправляет замер на cloudflareinsights.com/cdn-cgi/rum. ' +
+      'Без этой строки в день enforce маячок загрузится, но ничего не отправит',
+  },
 ];
 
 export const BASE_DIRECTIVES: ReadonlyArray<readonly [string, string]> = [

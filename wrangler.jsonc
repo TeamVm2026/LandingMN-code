@@ -51,7 +51,12 @@
   // ⚠️ Только для production: у `env.preview` ниже своих `vars` нет, и
   // превью не переадресуются (их хосты функция и так пропускает).
   "vars": {
-    "CANONICAL_ORIGIN": "https://partner-melbet.com"
+    "CANONICAL_ORIGIN": "https://partner-melbet.com",
+    // 29.09.2026 (находка №1 сверки 08-08): страница ошибки заявки для
+    // посетителя без JavaScript давала ссылку на голый https://t.me/ —
+    // функция читает PUBLIC_TG_CONTACT_URL из окружения Pages, а там его не
+    // было ни в одной выкладке с 22.08. Значение то же, что у сборки.
+    "PUBLIC_TG_CONTACT_URL": "https://t.me/Example_Manager"
   },
 
   // ─── Журнал лидов (LEAD-04) ───────────────────────────────────────────────
