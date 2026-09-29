@@ -324,6 +324,53 @@ test('CSP-ШУМ: inline от РАСШИРЕНИЯ отсекается, inline 
   assertNeverManagerChat(h);
 });
 
+test('CSP-ШУМ: файл, открытый вкладкой (картинка, текст, XML), — шум; страница — находка', async (t) => {
+  const h = createHarness();
+  t.after(() => h.restore());
+
+  const viewers: Array<[string, string, string]> = [
+    ['https://partner-melbet.com/favicon.ico', 'style-src-attr', 'inline'],
+    ['https://partner-melbet.com/favicon-32x32.png', 'style-src-attr', 'inline'],
+    ['https://partner-melbet.com/_astro/client-clouds-group.E0AV2zcD_ZhiNsC.webp', 'style-src-attr', 'inline'],
+    ['https://partner-melbet.com/_astro/Footer.eTNZ6L6s.css', 'style-src-attr', 'inline'],
+    ['https://partner-melbet.com/robots.txt?x=1', 'style-src-attr', 'inline'],
+    ['https://partner-melbet.com/sitemap-index.xml', 'style-src-elem', 'inline'],
+    ['https://partner-melbet.com/sitemap-index.xml', 'img-src', 'data'],
+  ];
+  for (const [documentUri, directive, blocked] of viewers) {
+    const response = await h.post(
+      legacyBody({
+        'document-uri': documentUri,
+        'violated-directive': directive,
+        'effective-directive': directive,
+        'blocked-uri': blocked,
+        'source-file': '',
+        'line-number': 0,
+      }),
+    );
+    assert.equal(response.status, 204, `${documentUri}: ответ всегда 204`);
+  }
+  await h.settle();
+  assert.equal(h.fetchCalls.length, 0, `ЗАМЕР ШУМА ФАЙЛОВ: ${String(viewers.length)} нарушений просмотрщика -> ноль доставок`);
+  assert.equal(h.cache.size, 0, 'шум не занимает и места в кэше');
+
+  for (const page of ['https://partner-melbet.com/ru/', 'https://partner-melbet.com/index.html']) {
+    await h.post(
+      legacyBody({
+        'document-uri': page,
+        'violated-directive': 'style-src-attr',
+        'effective-directive': 'style-src-attr',
+        'blocked-uri': 'inline',
+        'source-file': '',
+        'line-number': 0,
+      }),
+    );
+  }
+  await h.settle();
+  assert.equal(h.fetchCalls.length, 2, 'style-src-attr на /ru/ и на /index.html — две находки');
+  assertNeverManagerChat(h);
+});
+
 test('CSP-ДЕДУП: то же нарушение дважды -> ОДНА доставка', async (t) => {
   const h = createHarness();
   t.after(() => h.restore());

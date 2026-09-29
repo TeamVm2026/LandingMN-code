@@ -42,11 +42,19 @@ function hasNoiseScheme(value: string): boolean {
   return NOISE_SCHEMES.some((scheme) => lower.startsWith(scheme));
 }
 
+const FILE_DOCUMENT = /\.(?:ico|png|jpe?g|gif|webp|avif|svg|css|m?js|map|txt|xml|json|webmanifest|woff2?)$/i;
+
+function isFileDocument(documentPath: string): boolean {
+  return FILE_DOCUMENT.test(documentPath);
+}
+
 export function isNoise(violation: CspViolation): boolean {
   if (hasNoiseScheme(violation.blocked)) return true;
   if (violation.sourceFile !== '' && hasNoiseScheme(violation.sourceFile)) return true;
 
   if (violation.documentPath !== '' && hasNoiseScheme(violation.documentPath)) return true;
+
+  if (isFileDocument(violation.documentPath)) return true;
   return false;
 }
 
